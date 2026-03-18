@@ -1,0 +1,26 @@
+{
+  "name": "reading_writing_platform",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "npx @tailwindcss/cli -i ./wwwroot/css/site.src.css -o ./wwwroot/css/site.css --minify",
+    "watch:css": "npx @tailwindcss/cli -i ./wwwroot/css/site.src.css -o ./wwwroot/css/site.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akramnemri/Reading_Writing_Platform.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akramnemri/Reading_Writing_Platform/issues"
+  },
+  "homepage": "https://github.com/akramnemri/Reading_Writing_Platform#readme",
+  "description": "",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.1",
+    "tailwindcss": "^4.2.1"
+  }
+}

@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+    /* Colors */
+    --color-cream: #FAF8F3;
+    --color-ink-blue: #1A2B3C;
+    --color-deep-navy: #1E3250;
+    --color-antique-gold: #C4A34D;
+    --color-paper-grey: #E8E2D6;
+    /* Fonts */
+    --font-display: "Newsreader", "Crimson Pro", Georgia, serif;
+    --font-body: "Instrument Sans", "Public Sans", system-ui, sans-serif;
+    --font-reading: "Lora", Georgia, serif;
+    /* Radius */
+    --radius-outer: 12px;
+    --radius-inner: 4px;
+    /* Easing */
+    --ease-plotbound: cubic-bezier(0.25, 0.1, 0.25, 1);
+}   
+
+@layer base {
+    body {
+        @apply bg-cream text-ink-blue font-body;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-display tracking-tight;
+    }
+}
+
+@layer components {
+    .btn-primary {
+        @apply inline-flex items-center justify-center bg-deep-navy text-cream px-6 py-3 rounded-[var(--radius-outer)] hover:bg-ink-blue transition-colors duration-200 ease-plotbound;
+    }
+
+    .btn-gold {
+        @apply inline-flex items-center justify-center bg-antique-gold text-deep-navy px-6 py-3 rounded-[var(--radius-outer)] hover:brightness-110 transition-all duration-200 ease-plotbound font-medium;
+    }
+
+    .btn-ghost {
+        @apply inline-flex items-center justify-center border border-ink-blue/20 text-ink-blue px-6 py-3 rounded-[var(--radius-outer)] hover:bg-paper-grey/50 transition-colors duration-200 ease-plotbound;
+    }
+
+    .card-book {
+        @apply bg-cream rounded-[var(--radius-outer)] p-4 hover:-translate-y-1 transition-transform duration-200 ease-plotbound shadow-[0_0_0_1px_rgba(26,43,60,0.05)];
+    }
+
+    .nav-pill {
+        @apply px-4 py-2 rounded-full text-sm font-medium hover:bg-paper-grey/50 transition-colors duration-200;
+    }
+
+    .nav-pill-active {
+        @apply bg-antique-gold/20 text-deep-navy border border-antique-gold/30;
+    }
+
+    .reading-container {
+        @apply max-w-[65ch] mx-auto bg-cream px-6 py-12 leading-relaxed;
+    }   
+}
+
+@layer utilities {
+    .text-shadow-book {
+        text-shadow: 0 2px 4px rgba(26, 43, 60, 0.1);
+    }
+}
