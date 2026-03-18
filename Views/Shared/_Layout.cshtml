@@ -1,50 +1,66 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth h-full">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Reading_Writing_Platform</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=Lora:wght@400;500;600&family=Newsreader:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap"
+          rel="stylesheet" />
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Reading_Writing_Platform.styles.css" asp-append-version="true" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Reading_Writing_Platform</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    <partial name="_LoginPartial" />
+<body class="min-h-full flex flex-col bg-cream text-ink-blue font-body antialiased">
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-cream/80 border-b border-ink-blue/10">
+        <div id="scroll-progress"
+             class="h-1 bg-antique-gold origin-left scale-x-0 transition-transform duration-300"></div>
+
+        <nav class="mx-auto w-full max-w-6xl px-4 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <a asp-area="" asp-controller="Home" asp-action="Index"
+                   class="text-xl font-display font-semibold text-deep-navy text-shadow-book">
+                    Reading_Writing_Platform
+                </a>
+
+                <div class="flex items-center gap-2">
+                    <a asp-area="" asp-controller="Home" asp-action="Index" class="nav-pill">Home</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="nav-pill">Privacy</a>
                 </div>
+
+                <partial name="_LoginPartial" />
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Reading_Writing_Platform - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <main role="main" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        @RenderBody()
+    </main>
+
+    <footer class="border-t border-ink-blue/10 py-6">
+        <div class="mx-auto w-full max-w-6xl px-4 text-sm text-ink-blue/70">
+            &copy; 2026 - Reading_Writing_Platform -
+            <a asp-area="" asp-controller="Home" asp-action="Privacy"
+               class="underline decoration-ink-blue/30 hover:decoration-ink-blue">
+                Privacy
+            </a>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        window.addEventListener("scroll", () => {
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            const ratio = max > 0 ? (window.scrollY / max) : 0;
+            const progress = document.getElementById("scroll-progress");
+            if (progress) {
+                progress.style.transform = `scaleX(${Math.min(Math.max(ratio, 0), 1)})`;
+            }
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

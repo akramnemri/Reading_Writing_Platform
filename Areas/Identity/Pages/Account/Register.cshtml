@@ -1,0 +1,132 @@
+@page
+@model Reading_Writing_Platform.Areas.Identity.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Create account";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Reading_Writing_Platform</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=Lora:wght@400;500;600&family=Newsreader:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap"
+          rel="stylesheet" />
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="min-h-full bg-cream text-ink-blue font-body antialiased">
+    <main class="min-h-screen grid lg:grid-cols-2">
+        <section class="flex items-center justify-center px-6 py-10 order-2 lg:order-1">
+            <div class="w-full max-w-md rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white/85 p-8 shadow-[0_20px_40px_rgba(26,43,60,0.08)]">
+                <div class="mb-8">
+                    <p class="text-sm uppercase tracking-[0.2em] text-ink-blue/60">Join us</p>
+                    <h1 class="mt-2 text-4xl font-display text-deep-navy">Create account</h1>
+                    <p class="mt-2 text-sm text-ink-blue/70">Create your profile to start reading and writing.</p>
+                </div>
+
+                <button type="button" disabled class="btn-ghost w-full justify-center opacity-70 cursor-not-allowed">
+                    Google (coming soon)
+                </button>
+
+                <div class="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-ink-blue/40">
+                    <span class="h-px flex-1 bg-ink-blue/10"></span>
+                    Or sign up with email
+                    <span class="h-px flex-1 bg-ink-blue/10"></span>
+                </div>
+
+                <form method="post" asp-route-returnUrl="@Model.ReturnUrl" class="space-y-4">
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                    {
+                        <div asp-validation-summary="ModelOnly" class="rounded-[var(--radius-inner)] border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
+                    }
+
+                    <div>
+                        <label asp-for="Input.FullName" class="mb-1 block text-sm font-medium text-ink-blue"></label>
+                        <input asp-for="Input.FullName"
+                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                               autocomplete="name"
+                               placeholder="Jane Austen" />
+                        <span asp-validation-for="Input.FullName" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.Email" class="mb-1 block text-sm font-medium text-ink-blue"></label>
+                        <input asp-for="Input.Email"
+                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                               autocomplete="username"
+                               placeholder="name@example.com" />
+                        <span asp-validation-for="Input.Email" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.Password" class="mb-1 block text-sm font-medium text-ink-blue"></label>
+                        <input asp-for="Input.Password"
+                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                               autocomplete="new-password"
+                               placeholder="Create a password" />
+                        <span asp-validation-for="Input.Password" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.ConfirmPassword" class="mb-1 block text-sm font-medium text-ink-blue"></label>
+                        <input asp-for="Input.ConfirmPassword"
+                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                               autocomplete="new-password"
+                               placeholder="Confirm password" />
+                        <span asp-validation-for="Input.ConfirmPassword" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+
+                    <div class="flex items-start gap-2 text-xs text-ink-blue/70">
+                        <input type="checkbox"
+                               id="accept-terms"
+                               name="Input.AcceptTerms"
+                               value="true"
+                               @(Model.Input.AcceptTerms ? "checked" : null)
+                               class="mt-0.5 h-4 w-4 rounded border-ink-blue/30" />
+                        <label for="accept-terms">
+                            I agree to the
+                            <a asp-area="" asp-controller="Home" asp-action="Privacy" class="underline hover:text-antique-gold">Privacy Policy</a>
+                            and
+                            <a href="#" class="underline hover:text-antique-gold">Terms</a>.
+                        </label>
+                    </div>
+                    <span asp-validation-for="Input.AcceptTerms" class="mt-1 block text-sm text-red-600"></span>
+
+                    <button type="submit" class="btn-gold w-full justify-center">Create account</button>
+
+                    <p class="pt-2 text-center text-sm text-ink-blue/70">
+                        Already have an account?
+                        <a href="@Url.Page("/Account/Login", values: new { area = "Identity", returnUrl = Model.ReturnUrl })"
+                           class="font-semibold text-antique-gold hover:underline">
+                            Sign in
+                        </a>
+                    </p>
+                </form>
+            </div>
+        </section>
+
+        <section class="relative hidden lg:block order-1 lg:order-2">
+            <img src="~/images/auth/signup-library.png"
+                 alt="Reading room"
+                 class="h-full w-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-deep-navy/85 via-deep-navy/40 to-antique-gold/25"></div>
+
+            <div class="absolute bottom-10 left-10 right-10 text-cream">
+                <p class="text-4xl leading-tight font-display">
+                    “There is no greater agony than bearing an untold story inside you.”
+                </p>
+                <p class="mt-4 text-antique-gold font-semibold">— Maya Angelou</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

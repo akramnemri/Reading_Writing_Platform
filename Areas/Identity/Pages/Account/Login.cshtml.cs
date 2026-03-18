@@ -66,6 +66,7 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
 
             if (!ModelState.IsValid)
             {
+                ReturnUrl = returnUrl;
                 return Page();
             }
 
@@ -88,6 +89,7 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
             }
 
             ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            ReturnUrl = returnUrl;
             return Page();
         }
     }
