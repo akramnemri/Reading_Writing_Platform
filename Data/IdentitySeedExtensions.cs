@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Reading_Writing_Platform.Security;
 
 namespace Reading_Writing_Platform.Data
 {
@@ -11,7 +12,7 @@ namespace Reading_Writing_Platform.Data
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
-            string[] roles = ["Author", "Member", "Admin"];
+            string[] roles = [RoleNames.Author, RoleNames.Member, RoleNames.Admin];
 
             foreach (var role in roles)
             {
@@ -52,9 +53,9 @@ namespace Reading_Writing_Platform.Data
                 }
             }
 
-            if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
+            if (!await userManager.IsInRoleAsync(adminUser, RoleNames.Admin))
             {
-                var addToRoleResult = await userManager.AddToRoleAsync(adminUser, "Admin");
+                var addToRoleResult = await userManager.AddToRoleAsync(adminUser, RoleNames.Admin);
                 if (!addToRoleResult.Succeeded)
                 {
                     var errors = string.Join("; ", addToRoleResult.Errors.Select(e => e.Description));
