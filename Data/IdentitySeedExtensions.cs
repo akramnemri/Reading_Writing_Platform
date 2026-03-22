@@ -30,36 +30,50 @@ namespace Reading_Writing_Platform.Data
             var adminEmail = configuration["IdentitySeed:AdminEmail"];
             var adminPassword = configuration["IdentitySeed:AdminPassword"];
 
-            if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+            if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
             {
-                return;
-            }
-
-            var adminUser = await userManager.FindByEmailAsync(adminEmail);
-            if (adminUser is null)
-            {
-                adminUser = new IdentityUser
+                var adminUser = await userManager.FindByEmailAsync(adminEmail);
+                if (adminUser is null)
                 {
-                    UserName = adminEmail,
-                    Email = adminEmail,
-                    EmailConfirmed = true
-                };
+                    adminUser = new IdentityUser
+                    {
+                        UserName = adminEmail,
+                        Email = adminEmail,
+                        EmailConfirmed = true
+                    };
 
-                var userResult = await userManager.CreateAsync(adminUser, adminPassword);
-                if (!userResult.Succeeded)
+                    var userResult = await userManager.CreateAsync(adminUser, adminPassword);
+                    if (!userResult.Succeeded)
+                    {
+                        var errors = string.Join("; ", userResult.Errors.Select(e => e.Description));
+                        throw new InvalidOperationException($"Unable to create admin user: {errors}");
+                    }
+                }
+
+                if (!await userManager.IsInRoleAsync(adminUser, RoleNames.Admin))
                 {
-                    var errors = string.Join("; ", userResult.Errors.Select(e => e.Description));
-                    throw new InvalidOperationException($"Unable to create admin user: {errors}");
+                    var addToRoleResult = await userManager.AddToRoleAsync(adminUser, RoleNames.Admin);
+                    if (!addToRoleResult.Succeeded)
+                    {
+                        var errors = string.Join("; ", addToRoleResult.Errors.Select(e => e.Description));
+                        throw new InvalidOperationException($"Unable to assign Admin role: {errors}");
+                    }
                 }
             }
 
-            if (!await userManager.IsInRoleAsync(adminUser, RoleNames.Admin))
+            // Backfill: any user without role becomes Member
+            var users = userManager.Users.ToList();
+            foreach (var user in users)
             {
-                var addToRoleResult = await userManager.AddToRoleAsync(adminUser, RoleNames.Admin);
-                if (!addToRoleResult.Succeeded)
+                var rolesForUser = await userManager.GetRolesAsync(user);
+                if (rolesForUser.Count == 0)
                 {
-                    var errors = string.Join("; ", addToRoleResult.Errors.Select(e => e.Description));
-                    throw new InvalidOperationException($"Unable to assign Admin role: {errors}");
+                    var addMemberResult = await userManager.AddToRoleAsync(user, RoleNames.Member);
+                    if (!addMemberResult.Succeeded)
+                    {
+                        var errors = string.Join("; ", addMemberResult.Errors.Select(e => e.Description));
+                        throw new InvalidOperationException($"Unable to assign default role '{RoleNames.Member}' to user '{user.Email ?? user.Id}': {errors}");
+                    }
                 }
             }
         }

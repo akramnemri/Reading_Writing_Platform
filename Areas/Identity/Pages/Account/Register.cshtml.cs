@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Reading_Writing_Platform.Security;
 
 namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
 {
@@ -80,16 +81,13 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
             {
                 UserName = Input.Email,
                 Email = Input.Email,
-
-                // MVP: permet de fonctionner immédiatement avec RequireConfirmedAccount=true.
-                // Retirer ceci quand vous activez une vraie confirmation email.
                 EmailConfirmed = true
             };
 
-            var result = await _userManager.CreateAsync(user, Input.Password);
-            if (!result.Succeeded)
+            var createResult = await _userManager.CreateAsync(user, Input.Password);
+            if (!createResult.Succeeded)
             {
-                foreach (var error in result.Errors)
+                foreach (var error in createResult.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
@@ -97,13 +95,21 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
                 return Page();
             }
 
-            await _userManager.AddToRoleAsync(user, "Member");
+            var addRoleResult = await _userManager.AddToRoleAsync(user, RoleNames.Member);
+            if (!addRoleResult.Succeeded)
+            {
+                foreach (var error in addRoleResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return Page();
+            }
+
             await _userManager.AddClaimAsync(user, new Claim("display_name", Input.FullName));
-
             await _signInManager.SignInAsync(user, isPersistent: false);
-            _logger.LogInformation("User created a new account with password.");
 
-            return LocalRedirect(returnUrl);
+            return RedirectToPage("/Account/Manage/SetupProfile", new { area = "Identity", returnUrl });
         }
     }
 }

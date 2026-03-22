@@ -1,0 +1,59 @@
+@page
+@model Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage.SetupProfileModel
+@{
+    ViewData["Title"] = "Complete profile";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Reading_Writing_Platform</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="min-h-full bg-cream text-ink-blue font-body antialiased">
+    <main class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-2xl rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white/90 p-8 shadow-[0_20px_40px_rgba(26,43,60,0.08)]">
+            <h1 class="text-3xl font-display text-deep-navy">Complete your profile</h1>
+            <p class="mt-2 text-sm text-ink-blue/70">Choose your intent to unlock the right experience.</p>
+
+            <form method="post" class="mt-6 space-y-4">
+                <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm"></div>
+
+                <input type="hidden" asp-for="ReturnUrl" />
+
+                <div>
+                    <label asp-for="Input.DisplayName" class="block mb-1 text-sm font-medium"></label>
+                    <input asp-for="Input.DisplayName" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+                    <span asp-validation-for="Input.DisplayName" class="text-red-600 text-sm"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.Bio" class="block mb-1 text-sm font-medium"></label>
+                    <textarea asp-for="Input.Bio" rows="4" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></textarea>
+                    <span asp-validation-for="Input.Bio" class="text-red-600 text-sm"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.AvatarUrl" class="block mb-1 text-sm font-medium"></label>
+                    <input asp-for="Input.AvatarUrl" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+                    <span asp-validation-for="Input.AvatarUrl" class="text-red-600 text-sm"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.Intent" class="block mb-1 text-sm font-medium"></label>
+                    <select asp-for="Input.Intent" asp-items="Html.GetEnumSelectList<Reading_Writing_Platform.Models.ProfileIntent>()" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></select>
+                </div>
+
+                <button type="submit" class="btn-gold">Save and continue</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+@model IReadOnlyList<Reading_Writing_Platform.Models.Novel>
+
+@{
+    ViewData["Title"] = "My Novels";
+
+    int totalNovels = Model.Count;
+    int publishedCount = Model.Count(x => x.Status == Reading_Writing_Platform.Models.NovelStatus.Published);
+    int draftCount = Model.Count(x => x.Status == Reading_Writing_Platform.Models.NovelStatus.Draft);
+    int totalChapters = Model.Sum(x => x.Chapters.Count);
+}
+
+<div class="space-y-8">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-display text-deep-navy">My Novels</h1>
+            <p class="mt-2 text-sm text-ink-blue/70">
+                Manage your stories, track progress, and publish new chapters.
+            </p>
+        </div>
+        <a asp-action="Create" class="btn-gold">+ Create Novel</a>
+    </div>
+
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="card-book">
+            <p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Total novels</p>
+            <p class="mt-2 text-3xl font-display text-deep-navy">@totalNovels</p>
+        </article>
+
+        <article class="card-book">
+            <p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Published</p>
+            <p class="mt-2 text-3xl font-display text-deep-navy">@publishedCount</p>
+        </article>
+
+        <article class="card-book">
+            <p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Drafts</p>
+            <p class="mt-2 text-3xl font-display text-deep-navy">@draftCount</p>
+        </article>
+
+        <article class="card-book">
+            <p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Total chapters</p>
+            <p class="mt-2 text-3xl font-display text-deep-navy">@totalChapters</p>
+        </article>
+    </section>
+
+    <div class="border-b border-ink-blue/10 pb-2">
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="nav-pill nav-pill-active">All Novels (@totalNovels)</span>
+            <span class="nav-pill">Published (@publishedCount)</span>
+            <span class="nav-pill">Drafts (@draftCount)</span>
+        </div>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="card-book py-10 text-center">
+            <h2 class="text-2xl font-display text-deep-navy">No novels yet</h2>
+            <p class="mt-2 text-sm text-ink-blue/70">Start your first story now.</p>
+            <a asp-action="Create" class="btn-gold mt-6">Create Novel</a>
+        </div>
+    }
+    else
+    {
+        <section class="space-y-4">
+            @foreach (var novel in Model)
+            {
+                string badgeClass = novel.Status switch
+                {
+                    Reading_Writing_Platform.Models.NovelStatus.Published => "bg-emerald-100 text-emerald-800 border border-emerald-200",
+                    Reading_Writing_Platform.Models.NovelStatus.Draft => "bg-slate-100 text-slate-700 border border-slate-200",
+                    Reading_Writing_Platform.Models.NovelStatus.Submitted => "bg-amber-100 text-amber-800 border border-amber-200",
+                    Reading_Writing_Platform.Models.NovelStatus.Approved => "bg-sky-100 text-sky-800 border border-sky-200",
+                    Reading_Writing_Platform.Models.NovelStatus.Rejected => "bg-rose-100 text-rose-800 border border-rose-200",
+                    _ => "bg-paper-grey text-ink-blue border border-ink-blue/10"
+                };
+
+                <article class="card-book">
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start">
+                        <div class="h-28 w-20 shrink-0 overflow-hidden rounded-[var(--radius-inner)] bg-paper-grey">
+                            @if (!string.IsNullOrWhiteSpace(novel.CoverImageUrl))
+                            {
+                                <img src="@novel.CoverImageUrl" alt="@novel.Title cover" class="h-full w-full object-cover" />
+                            }
+                            else
+                            {
+                                <div class="flex h-full w-full items-center justify-center text-[10px] text-ink-blue/60 px-2 text-center">
+                                    No cover
+                                </div>
+                            }
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-2xl font-display text-deep-navy">@novel.Title</h2>
+                                <span class="rounded-full px-2.5 py-1 text-xs font-medium @badgeClass">@novel.Status</span>
+                            </div>
+
+                            <p class="mt-2 text-sm text-ink-blue/75 line-clamp-2">
+                                @(string.IsNullOrWhiteSpace(novel.Description) ? "No description provided yet." : novel.Description)
+                            </p>
+
+                            <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-blue/70">
+                                <span>@novel.Chapters.Count chapter(s)</span>
+                                <span>Slug: @novel.Slug</span>
+                                <span>Updated @novel.UpdatedAt.ToLocalTime().ToString("g")</span>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <a asp-action="Details" asp-route-id="@novel.Id" class="btn-ghost py-2 px-4">Details</a>
+                                <a asp-action="Edit" asp-route-id="@novel.Id" class="btn-primary py-2 px-4">Edit</a>
+                                <a asp-controller="Chapter"
+                                   asp-action="Index"
+                                   asp-route-novelId="@novel.Id"
+                                   asp-route-novelSlug="@novel.Slug"
+                                   class="btn-gold py-2 px-4">
+                                    Chapters
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@novel.Id" class="btn-ghost py-2 px-4">Delete</a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+</div>

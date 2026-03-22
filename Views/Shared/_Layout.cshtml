@@ -1,4 +1,12 @@
-﻿<!DOCTYPE html>
+﻿@using Reading_Writing_Platform.Security
+@{
+    string? currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    string? currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    bool isAuthorOrAdmin = User.IsInRole(RoleNames.Author) || User.IsInRole(RoleNames.Admin);
+}
+
+<!DOCTYPE html>
 <html lang="en" class="scroll-smooth h-full">
 <head>
     <meta charset="utf-8" />
@@ -26,8 +34,36 @@
                 </a>
 
                 <div class="flex items-center gap-2">
-                    <a asp-area="" asp-controller="Home" asp-action="Index" class="nav-pill">Home</a>
-                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="nav-pill">Privacy</a>
+                    <a asp-area=""
+                       asp-controller="Home"
+                       asp-action="Index"
+                       class="@(currentController == "Home" && currentAction == "Index" ? "nav-pill nav-pill-active" : "nav-pill")">
+                        Home
+                    </a>
+
+                    <a asp-area=""
+                       asp-controller="Home"
+                       asp-action="Privacy"
+                       class="@(currentController == "Home" && currentAction == "Privacy" ? "nav-pill nav-pill-active" : "nav-pill")">
+                        Privacy
+                    </a>
+
+                    @if (isAuthorOrAdmin)
+                    {
+                        <a asp-area=""
+                           asp-controller="Novel"
+                           asp-action="Index"
+                           class="@(currentController == "Novel" ? "nav-pill nav-pill-active" : "nav-pill")">
+                            My Novels
+                        </a>
+
+                        <a asp-area=""
+                           asp-controller="Novel"
+                           asp-action="Index"
+                           class="@(currentController == "Chapter" ? "nav-pill nav-pill-active" : "nav-pill")">
+                            Chapters
+                        </a>
+                    }
                 </div>
 
                 <partial name="_LoginPartial" />

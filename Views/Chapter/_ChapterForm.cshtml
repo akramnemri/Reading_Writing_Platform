@@ -1,0 +1,53 @@
+@model Reading_Writing_Platform.ViewModels.ChapterFormViewModel
+
+<form method="post" class="space-y-4">
+    <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm"></div>
+
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="NovelId" />
+    <input type="hidden" asp-for="NovelSlug" />
+    <input type="hidden" asp-for="RowVersion" />
+
+    <div>
+        <label asp-for="Title" class="block mb-1 text-sm font-medium"></label>
+        <input asp-for="Title" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+        <span asp-validation-for="Title" class="text-red-600 text-sm"></span>
+    </div>
+
+    <div>
+        <label asp-for="Content" class="block mb-1 text-sm font-medium"></label>
+        <textarea asp-for="Content" rows="12" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></textarea>
+        <span asp-validation-for="Content" class="text-red-600 text-sm"></span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+            <label asp-for="Status" class="block mb-1 text-sm font-medium"></label>
+            <select asp-for="Status" asp-items="Html.GetEnumSelectList<Reading_Writing_Platform.Models.ChapterStatus>()" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></select>
+        </div>
+        <div>
+            <label asp-for="Order" class="block mb-1 text-sm font-medium"></label>
+            <input asp-for="Order" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+            <span asp-validation-for="Order" class="text-red-600 text-sm"></span>
+        </div>
+        <div>
+            <label asp-for="BasePrice" class="block mb-1 text-sm font-medium"></label>
+            <input asp-for="BasePrice" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+            <span asp-validation-for="BasePrice" class="text-red-600 text-sm"></span>
+        </div>
+    </div>
+
+    <label class="flex items-center gap-2 text-sm">
+        <input asp-for="IsLocked" />
+        <span>Is locked</span>
+    </label>
+
+    <div class="flex gap-2">
+        <button type="submit" class="btn-gold">Save</button>
+        <a asp-action="Index" asp-route-novelId="@Model.NovelId" asp-route-novelSlug="@Model.NovelSlug" class="btn-ghost">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
