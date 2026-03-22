@@ -1,0 +1,96 @@
+@page
+@model Reading_Writing_Platform.Areas.Identity.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Sign in";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Reading_Writing_Platform</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=Lora:wght@400;500;600&family=Newsreader:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap"
+          rel="stylesheet" />
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="min-h-full bg-cream text-ink-blue font-body antialiased">
+    <main class="min-h-screen grid lg:grid-cols-2">
+        <section class="relative hidden lg:block">
+            <img src="~/images/auth/library.jpg"
+                 alt="Library"
+                 class="h-full w-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-deep-navy/85 via-deep-navy/40 to-antique-gold/25"></div>
+
+            <div class="absolute bottom-10 left-10 right-10 text-cream">
+                <p class="text-4xl leading-tight font-display">
+                    “A reader lives a thousand lives before he dies.”
+                </p>
+                <p class="mt-4 text-antique-gold font-semibold">— George R.R. Martin</p>
+            </div>
+        </section>
+
+        <section class="flex items-center justify-center px-6 py-10">
+            <div class="w-full max-w-md rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white/85 p-8 shadow-[0_20px_40px_rgba(26,43,60,0.08)]">
+                <div class="mb-8">
+                    <p class="text-sm uppercase tracking-[0.2em] text-ink-blue/60">Welcome back</p>
+                    <h1 class="mt-2 text-4xl font-display text-deep-navy">Sign in</h1>
+                    <p class="mt-2 text-sm text-ink-blue/70">Continue reading and writing on your platform.</p>
+                </div>
+
+                <form method="post" asp-route-returnUrl="@Model.ReturnUrl" class="space-y-4">
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                    {
+                        <div asp-validation-summary="ModelOnly" class="rounded-[var(--radius-inner)] border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
+                    }
+
+                    <div>
+                        <label asp-for="Input.Email" class="mb-1 block text-sm font-medium text-ink-blue"></label>
+                        <input asp-for="Input.Email"
+                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                               autocomplete="username"
+                               placeholder="name@example.com" />
+                        <span asp-validation-for="Input.Email" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+
+                    <div>
+                        <div class="mb-1 flex items-center justify-between">
+                            <label asp-for="Input.Password" class="block text-sm font-medium text-ink-blue"></label>
+                            <a asp-page="./ForgotPassword" class="text-xs font-medium text-antique-gold hover:underline">Forgot password?</a>
+                        </div>
+                        <input asp-for="Input.Password"
+                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                               autocomplete="current-password"
+                               placeholder="••••••••" />
+                        <span asp-validation-for="Input.Password" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+
+                    <label asp-for="Input.RememberMe" class="flex items-center gap-2 text-sm text-ink-blue/80">
+                        <input asp-for="Input.RememberMe" class="h-4 w-4 rounded border-ink-blue/30 text-deep-navy focus:ring-antique-gold" />
+                        @Html.DisplayNameFor(m => m.Input.RememberMe)
+                    </label>
+
+                    <button type="submit" class="btn-gold w-full justify-center">Sign in</button>
+
+                    <p class="pt-2 text-center text-sm text-ink-blue/70">
+                        Don’t have an account?
+                        <a href="@Url.Page("/Account/Register", values: new { area = "Identity", returnUrl = Model.ReturnUrl })"
+                           class="font-semibold text-antique-gold hover:underline">
+                            Sign up
+                        </a>
+                    </p>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>
