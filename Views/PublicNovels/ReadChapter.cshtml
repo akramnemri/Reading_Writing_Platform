@@ -1,0 +1,87 @@
+﻿@model Reading_Writing_Platform.Models.Chapter
+
+@{
+    var novel = ViewBag.Novel as Reading_Writing_Platform.Models.Novel;
+    int? prev = ViewBag.PrevChapterNumber;
+    int? next = ViewBag.NextChapterNumber;
+    ViewData["Title"] = $"Chapter {Model.ChapterNumber} — {Model.Title}";
+}
+
+<div class="space-y-6 max-w-3xl mx-auto">
+
+    <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
+        <a href="/" class="hover:text-ink-blue">Home</a>
+        <span>›</span>
+        <a asp-controller="PublicNovels"
+           asp-action="Details"
+           asp-route-slug="@novel?.Slug"
+           class="hover:text-ink-blue">
+            @novel?.Title
+        </a>
+        <span>›</span>
+        <span class="text-ink-blue font-medium">Chapter @Model.ChapterNumber</span>
+    </nav>
+
+    <section class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-6 shadow-[0_10px_24px_rgba(26,43,60,0.06)]">
+        <h1 class="text-3xl font-display text-deep-navy">
+            Chapter @Model.ChapterNumber — @Model.Title
+        </h1>
+        <p class="mt-1 text-xs text-ink-blue/50">@Model.WordCount words</p>
+
+        <hr class="my-5 border-ink-blue/10" />
+
+        <div class="prose prose-sm max-w-none text-ink-blue/90 leading-relaxed">
+            @Html.Raw(Model.Content)
+        </div>
+    </section>
+
+    <div class="flex items-center justify-between gap-4">
+        @if (prev.HasValue)
+        {
+            <a asp-controller="PublicNovels"
+               asp-action="ReadChapter"
+               asp-route-slug="@novel?.Slug"
+               asp-route-chapterNumber="@prev.Value"
+               class="btn-ghost py-2 px-4">
+                ← Chapter @prev.Value
+            </a>
+        }
+        else
+        {
+            <span></span>
+        }
+
+        <a asp-controller="PublicNovels"
+           asp-action="Details"
+           asp-route-slug="@novel?.Slug"
+           class="text-sm text-ink-blue/60 hover:text-antique-gold transition-colors">
+            Chapter List
+        </a>
+
+        @if (next.HasValue)
+        {
+            <a asp-controller="PublicNovels"
+               asp-action="ReadChapter"
+               asp-route-slug="@novel?.Slug"
+               asp-route-chapterNumber="@next.Value"
+               class="btn-gold py-2 px-4">
+                Chapter @next.Value →
+            </a>
+        }
+        else
+        {
+            <span class="text-sm text-ink-blue/40 italic">End of published chapters</span>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const slug = "@novel?.Slug";
+        const chapterNumber = @Model.ChapterNumber;
+
+        if (slug) {
+            localStorage.setItem(`reading_progress_${slug}`, chapterNumber);
+        }
+    </script>
+}
