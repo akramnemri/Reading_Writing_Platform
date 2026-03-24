@@ -111,6 +111,18 @@ app.UseAuthorization();
 await app.Services.SeedIdentityDataAsync(app.Configuration);
 
 app.MapControllerRoute(
+    name: "public_read_chapter",
+    pattern: "novels/{slug}/chapters/{chapterNumber:int}",
+    defaults: new { controller = "PublicNovels", action = "ReadChapter" }
+);
+
+app.MapControllerRoute(
+    name: "public_novel_details",
+    pattern: "novels/{slug}",
+    defaults: new { controller = "PublicNovels", action = "Details" }
+);
+
+app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();

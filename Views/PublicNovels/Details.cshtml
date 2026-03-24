@@ -1,0 +1,145 @@
+﻿@model Reading_Writing_Platform.Models.Novel
+
+@{
+    ViewData["Title"] = Model.Title;
+    var chapters = Model.Chapters.OrderBy(c => c.ChapterNumber).ToList();
+    int totalWords = chapters.Sum(c => c.WordCount);
+}
+
+<div class="space-y-6">
+
+    <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
+        <a href="/" class="hover:text-ink-blue">Home</a>
+        <span>›</span>
+        <span class="text-ink-blue font-medium">@Model.Title</span>
+    </nav>
+
+    <section class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-6 shadow-[0_10px_24px_rgba(26,43,60,0.06)]">
+        <div class="flex flex-col gap-6 md:flex-row">
+
+            <div class="h-52 w-36 shrink-0 overflow-hidden rounded-[var(--radius-inner)] bg-paper-grey">
+                @if (!string.IsNullOrWhiteSpace(Model.CoverImageUrl))
+                {
+                    <img src="@Model.CoverImageUrl" alt="@Model.Title cover" class="h-full w-full object-cover" />
+                }
+                else
+                {
+                    <div class="flex h-full w-full items-center justify-center px-3 text-center text-xs text-ink-blue/60">
+                        No cover image
+                    </div>
+                }
+            </div>
+
+            <div class="min-w-0 flex-1">
+                <h1 class="text-4xl font-display text-deep-navy">@Model.Title</h1>
+
+                <p class="mt-1 text-sm text-ink-blue/60">
+                    By <span class="font-medium text-ink-blue">@(Model.AuthorUser?.UserName ?? "Unknown")</span>
+                    @if (Model.PublishedAt.HasValue)
+                    {
+                        <span>· Published @Model.PublishedAt.Value.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                    }
+                </p>
+
+                @if (Model.NovelThemes.Any())
+                {
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach (var nt in Model.NovelThemes)
+                        {
+                            <span class="rounded-full bg-paper-grey px-2.5 py-1 text-xs font-medium text-ink-blue/70 border border-ink-blue/10">
+                                @nt.Theme?.Name
+                            </span>
+                        }
+                    </div>
+                }
+
+                <p class="mt-3 text-sm text-ink-blue/75 leading-relaxed">
+                    @(string.IsNullOrWhiteSpace(Model.Description) ? "No description available." : Model.Description)
+                </p>
+
+                <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-blue/70">
+                    <span>@chapters.Count Chapters</span>
+                    <span>@totalWords Total Words</span>
+                </div>
+
+                @if (chapters.Any())
+                {
+                    <div class="mt-5 flex flex-wrap gap-2">
+                        <a asp-controller="PublicNovels"
+                           asp-action="ReadChapter"
+                           asp-route-slug="@Model.Slug"
+                           asp-route-chapterNumber="@chapters.First().ChapterNumber"
+                           class="btn-gold py-2 px-4">
+                            Start Reading
+                        </a>
+                        <a id="continue-btn"
+                           asp-controller="PublicNovels"
+                           asp-action="ReadChapter"
+                           asp-route-slug="@Model.Slug"
+                           asp-route-chapterNumber="1"
+                           class="btn-ghost py-2 px-4 hidden">
+                            Continue Reading
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-5">
+        <h2 class="text-xl font-display text-deep-navy mb-4">
+            Chapters <span class="text-ink-blue/40 text-base font-normal">(@chapters.Count)</span>
+        </h2>
+
+        @if (!chapters.Any())
+        {
+            <p class="text-sm text-ink-blue/60">No chapters published yet.</p>
+        }
+        else
+        {
+            <div class="space-y-2">
+                @foreach (var chapter in chapters)
+                {
+                    <a asp-controller="PublicNovels"
+                       asp-action="ReadChapter"
+                       asp-route-slug="@Model.Slug"
+                       asp-route-chapterNumber="@chapter.ChapterNumber"
+                       class="flex items-center justify-between rounded-[var(--radius-inner)] border border-ink-blue/10 p-3 hover:bg-paper-grey/50 transition-colors">
+                        <div>
+                            <p class="font-medium text-deep-navy text-sm">
+                                Chapter @chapter.ChapterNumber — @chapter.Title
+                            </p>
+                            @if (chapter.PublishedAt.HasValue)
+                            {
+                                <p class="text-xs text-ink-blue/50 mt-0.5">
+                                    @chapter.PublishedAt.Value.ToLocalTime().ToString("MMM dd, yyyy")
+                                </p>
+                            }
+                        </div>
+                        <div class="flex items-center gap-3 text-xs text-ink-blue/60 shrink-0">
+                            <span>@chapter.WordCount words</span>
+                            <span class="text-antique-gold font-medium">Read →</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        const slug = "@Model.Slug";
+        const key = `reading_progress_${slug}`;
+        const saved = localStorage.getItem(key);
+
+        if (saved) {
+            const btn = document.getElementById('continue-btn');
+            if (btn) {
+                btn.href = btn.href.replace(/\/chapters\/\d+$/, `/chapters/${saved}`);
+                btn.textContent = `Continue — Chapter ${saved}`;
+                btn.classList.remove('hidden');
+            }
+        }
+    </script>
+}
