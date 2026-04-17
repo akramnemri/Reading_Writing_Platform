@@ -1,8 +1,131 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model Reading_Writing_Platform.ViewModels.AuthorDashboardViewModel
+@using Reading_Writing_Platform.Models
+
+@{
+    ViewData["Title"] = "Author Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="space-y-8">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-display text-deep-navy">Author Dashboard</h1>
+            <p class="mt-2 text-sm text-ink-blue/70">Overview of your novels, status, and quick actions.</p>
+        </div>
+        <a asp-action="Create" class="btn-gold">+ Create Novel</a>
+    </div>
+
+    @if (TempData["StatusMessage"] is string statusMessage && !string.IsNullOrWhiteSpace(statusMessage))
+    {
+        <div class="rounded-[var(--radius-inner)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            @statusMessage
+        </div>
+    }
+
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="card-book">
+            <p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Total novels</p>
+            <p class="mt-2 text-3xl font-display text-deep-navy">@Model.TotalNovels</p>
+        </article>
+        <article class="card-book">
+            <p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Published</p>
+            <p class="mt-2 text-3xl font-display text-deep-navy">@Model.PublishedNovels</p>
+        </article>
+        <article class="card-book">
+            <p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Drafts</p>
+            <p class="mt-2 text-3xl font-display text-deep-navy">@Model.DraftNovels</p>
+        </article>
+        <article class="card-book">
+            <p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Submitted</p>
+            <p class="mt-2 text-3xl font-display text-deep-navy">@Model.SubmittedNovels</p>
+        </article>
+    </section>
+
+    @if (Model.Novels.Count == 0)
+    {
+        <div class="card-book py-10 text-center">
+            <h2 class="text-2xl font-display text-deep-navy">No novels yet</h2>
+            <p class="mt-2 text-sm text-ink-blue/70">Start your first story now.</p>
+            <a asp-action="Create" class="btn-gold mt-6">Create Novel</a>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white">
+            <table class="min-w-full text-sm">
+                <thead class="bg-paper-grey/35 text-ink-blue/70 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Novel</th>
+                        <th class="px-4 py-3 text-left">Status</th>
+                        <th class="px-4 py-3 text-left">Chapters</th>
+                        <th class="px-4 py-3 text-left">Metrics</th>
+                        <th class="px-4 py-3 text-left">Updated</th>
+                        <th class="px-4 py-3 text-right">Quick Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var novel in Model.Novels)
+                    {
+                        string badgeClass = novel.Status switch
+                        {
+                            NovelStatus.Published => "bg-emerald-100 text-emerald-800 border border-emerald-200",
+                            NovelStatus.Draft => "bg-slate-100 text-slate-700 border border-slate-200",
+                            NovelStatus.Submitted => "bg-amber-100 text-amber-800 border border-amber-200",
+                            NovelStatus.Approved => "bg-sky-100 text-sky-800 border border-sky-200",
+                            NovelStatus.Rejected => "bg-rose-100 text-rose-800 border border-rose-200",
+                            _ => "bg-paper-grey text-ink-blue border border-ink-blue/10"
+                        };
+
+                        <tr class="border-t border-ink-blue/10">
+                            <td class="px-4 py-4">
+                                <p class="font-medium text-deep-navy">@novel.Title</p>
+                                <p class="text-xs text-ink-blue/60">Slug: @novel.Slug</p>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="rounded-full px-2.5 py-1 text-xs font-medium @badgeClass">@novel.Status</span>
+                            </td>
+                            <td class="px-4 py-4 text-ink-blue/75">
+                                <div>@novel.ChapterCount total</div>
+                                <div class="text-xs">@novel.PublishedChapterCount published / @novel.DraftChapterCount draft</div>
+                            </td>
+                            <td class="px-4 py-4 text-ink-blue/75">
+                                <div>Reads: --</div>
+                                <div>Purchases: @(novel.PurchasesCount?.ToString() ?? "--")</div>
+                            </td>
+                            <td class="px-4 py-4 text-ink-blue/70">@novel.UpdatedAt.ToLocalTime().ToString("g")</td>
+                            <td class="px-4 py-4">
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    <a asp-action="Details" asp-route-id="@novel.Id" class="btn-ghost py-1.5 px-3 text-xs">Details</a>
+                                    <a asp-action="Edit" asp-route-id="@novel.Id" class="btn-primary py-1.5 px-3 text-xs">Edit</a>
+                                    <a href="@Url.Action("Index", "Chapter", new { novelId = novel.Id, novelSlug = novel.Slug })" class="btn-ghost py-1.5 px-3 text-xs">Chapters</a>
+
+                                    @if (novel.CanSubmitForReview)
+                                    {
+                                        <form asp-action="SubmitForReview" method="post" class="inline">
+                                            <input type="hidden" name="id" value="@novel.Id" />
+                                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                            <button type="submit" class="btn-gold py-1.5 px-3 text-xs">Submit</button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <a asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize" class="btn-ghost py-2 px-4 @(Model.Page <= 1 ? "pointer-events-none opacity-50" : null)">Previous</a>
+                <div class="flex flex-wrap items-center gap-1 text-sm">
+                    @for (int p = 1; p <= Model.TotalPages; p++)
+                    {
+                        <a asp-action="Index" asp-route-page="@p" asp-route-pageSize="@Model.PageSize" class="@(p == Model.Page ? "nav-pill nav-pill-active" : "nav-pill")">@p</a>
+                    }
+                </div>
+                <a asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize" class="btn-ghost py-2 px-4 @(Model.Page >= Model.TotalPages ? "pointer-events-none opacity-50" : null)">Next</a>
+            </div>
+        }
+    }
 </div>

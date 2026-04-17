@@ -30,21 +30,29 @@
             <input asp-for="Order" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
             <span asp-validation-for="Order" class="text-red-600 text-sm"></span>
         </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <label asp-for="BasePrice" class="block mb-1 text-sm font-medium"></label>
-            <input asp-for="BasePrice" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+            <input asp-for="BasePrice" type="number" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
             <span asp-validation-for="BasePrice" class="text-red-600 text-sm"></span>
+        </div>
+        <div>
+            <label asp-for="PreviewCharCount" class="block mb-1 text-sm font-medium"></label>
+            <input asp-for="PreviewCharCount" type="number" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+            <span asp-validation-for="PreviewCharCount" class="text-red-600 text-sm"></span>
         </div>
     </div>
 
-    <label class="flex items-center gap-2 text-sm">
+    <label class="flex items-center gap-2 text-sm mt-3">
         <input asp-for="IsLocked" />
-        <span>Is locked</span>
+        <span>Lock this chapter (requires payment in Coins)</span>
     </label>
 
     <div class="flex gap-2">
         <button type="submit" class="btn-gold">Save</button>
-        <a asp-action="Index" asp-route-novelId="@Model.NovelId" asp-route-novelSlug="@Model.NovelSlug" class="btn-ghost">Cancel</a>
+        <a href="@Url.Action("Index", "Chapter", new { novelId = Model.NovelId, novelSlug = Model.NovelSlug })" class="btn-ghost">Cancel</a>
     </div>
 </form>
 

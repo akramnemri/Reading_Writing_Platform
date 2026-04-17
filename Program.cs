@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
+using Reading_Writing_Platform.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,10 +64,14 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AuthorOrAdmin", policy => policy.RequireRole("Author", "Admin"));
 });
 
+builder.Services.AddSingleton<IAuthorizationHandler, ChapterAccessAuthorizationHandler>();
+
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 });
+
+builder.Services.AddScoped<ICoinService, CoinService>();
 
 var app = builder.Build();
 

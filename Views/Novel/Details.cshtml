@@ -1,47 +1,31 @@
-@model Reading_Writing_Platform.Models.Novel
+@model Reading_Writing_Platform.ViewModels.NovelDetailsViewModel
+@using Reading_Writing_Platform.Models
 
 @{
     ViewData["Title"] = $"Novel - {Model.Title}";
 
-    var orderedChapters = Model.Chapters
-        .OrderByDescending(c => c.ChapterNumber)
-        .ToList();
-
-    int totalChapters = orderedChapters.Count;
-    int publishedChapters = orderedChapters.Count(c => c.Status == Reading_Writing_Platform.Models.ChapterStatus.Published);
-    int draftChapters = orderedChapters.Count(c => c.Status == Reading_Writing_Platform.Models.ChapterStatus.Draft);
-    int totalWords = orderedChapters.Sum(c => c.WordCount);
-    int paidChapters = orderedChapters.Count(c => c.BasePrice > 0);
-    decimal avgPrice = paidChapters == 0 ? 0 : orderedChapters.Where(c => c.BasePrice > 0).Average(c => c.BasePrice);
-
-    var recentChapters = orderedChapters.Take(3).ToList();
-
-    var chartData = orderedChapters
-        .Take(7)
-        .Select(c => c.WordCount)
-        .DefaultIfEmpty(0)
-        .Reverse()
-        .ToList();
-
-    int maxWordCount = Math.Max(1, chartData.Max());
-
     string statusBadgeClass = Model.Status switch
     {
-        Reading_Writing_Platform.Models.NovelStatus.Published => "bg-emerald-100 text-emerald-800 border border-emerald-200",
-        Reading_Writing_Platform.Models.NovelStatus.Draft => "bg-slate-100 text-slate-700 border border-slate-200",
-        Reading_Writing_Platform.Models.NovelStatus.Submitted => "bg-amber-100 text-amber-800 border border-amber-200",
-        Reading_Writing_Platform.Models.NovelStatus.Approved => "bg-sky-100 text-sky-800 border border-sky-200",
-        Reading_Writing_Platform.Models.NovelStatus.Rejected => "bg-rose-100 text-rose-800 border border-rose-200",
+        NovelStatus.Published => "bg-emerald-100 text-emerald-800 border border-emerald-200",
+        NovelStatus.Draft => "bg-slate-100 text-slate-700 border border-slate-200",
+        NovelStatus.Submitted => "bg-amber-100 text-amber-800 border border-amber-200",
+        NovelStatus.Approved => "bg-sky-100 text-sky-800 border border-sky-200",
+        NovelStatus.Rejected => "bg-rose-100 text-rose-800 border border-rose-200",
         _ => "bg-paper-grey text-ink-blue border border-ink-blue/10"
     };
 }
 
 <div class="space-y-6">
     <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
-        <a asp-controller="Novel" asp-action="Index" class="hover:text-ink-blue">My Novels</a>
+        <a asp-controller="Novel" asp-action="Index" class="hover:text-ink-blue">Dashboard</a>
         <span>›</span>
         <span class="text-ink-blue font-medium">@Model.Title</span>
     </nav>
+
+    @if (TempData["StatusMessage"] is string statusMessage && !string.IsNullOrWhiteSpace(statusMessage))
+    {
+        <div class="rounded-[var(--radius-inner)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">@statusMessage</div>
+    }
 
     <section class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-6 shadow-[0_10px_24px_rgba(26,43,60,0.06)]">
         <div class="flex flex-col gap-6 md:flex-row">
@@ -52,9 +36,7 @@
                 }
                 else
                 {
-                    <div class="flex h-full w-full items-center justify-center px-3 text-center text-xs text-ink-blue/60">
-                        No cover image
-                    </div>
+                    <div class="flex h-full w-full items-center justify-center px-3 text-center text-xs text-ink-blue/60">No cover image</div>
                 }
             </div>
 
@@ -68,188 +50,95 @@
                     @(string.IsNullOrWhiteSpace(Model.Description) ? "No description yet." : Model.Description)
                 </p>
 
-                <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-blue/70">
-                    <span>@totalChapters Chapters</span>
-                    <span>@publishedChapters Published</span>
-                    <span>@draftChapters Drafts</span>
-                    <span>@totalWords Words</span>
-                </div>
-
                 <div class="mt-5 flex flex-wrap gap-2">
-                    <a asp-controller="Chapter"
-                       asp-action="Create"
-                       asp-route-novelId="@Model.Id"
-                       asp-route-novelSlug="@Model.Slug"
-                       class="btn-gold py-2 px-4">
-                        + New Chapter
-                    </a>
+                    <a href="@Url.Action("Create", "Chapter", new { novelId = Model.Id, novelSlug = Model.Slug })" class="btn-gold py-2 px-4">+ Create Chapter</a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-ghost py-2 px-4">Edit Metadata</a>
 
-                    <a asp-controller="Chapter"
-                       asp-action="Index"
-                       asp-route-novelId="@Model.Id"
-                       asp-route-novelSlug="@Model.Slug"
-                       class="btn-ghost py-2 px-4">
-                        View Chapters
-                    </a>
-
-                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-ghost py-2 px-4">
-                        Edit Details
-                    </a>
+                    @if (Model.CanSubmitForReview)
+                    {
+                        <form asp-action="SubmitForReview" method="post" class="inline">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                            <button type="submit" class="btn-primary py-2 px-4">Submit for Review</button>
+                        </form>
+                    }
                 </div>
             </div>
         </div>
     </section>
 
-    <div class="border-b border-ink-blue/10 pb-2">
-        <div class="flex flex-wrap items-center gap-2 text-sm">
-            <span class="nav-pill nav-pill-active">Overview</span>
-            <span class="nav-pill">Analytics</span>
-            <span class="nav-pill">Chapters (@totalChapters)</span>
-            <span class="nav-pill">Comments</span>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <section class="lg:col-span-2 rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-5">
-            <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-xl font-display text-deep-navy">Readership Performance</h2>
-                <div class="text-xs text-ink-blue/60">Last 7 chapters</div>
-            </div>
-
-            <div class="h-40 rounded-[var(--radius-inner)] bg-paper-grey/30 p-4">
-                <div class="flex h-full items-end gap-2">
-                    @foreach (var value in chartData)
-                    {
-                        var heightPercent = (int)Math.Round((value / (double)maxWordCount) * 100d);
-                        var safeHeight = Math.Clamp(heightPercent, 8, 100);
-
-                        <div class="flex-1 rounded-t bg-antique-gold/70" style="height:@safeHeight%"></div>
-                    }
-                </div>
-            </div>
-
-            <div class="mt-2 grid grid-cols-7 gap-2 text-center text-[11px] text-ink-blue/60">
-                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
-            </div>
-        </section>
-
-        <section class="space-y-4">
-            <div class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-5">
-                <h2 class="text-xl font-display text-deep-navy">Quick Stats</h2>
-                <div class="mt-4 space-y-2 text-sm">
-                    <div class="flex items-center justify-between">
-                        <span class="text-ink-blue/70">Total Chapters</span>
-                        <span class="font-semibold">@totalChapters</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-ink-blue/70">Published</span>
-                        <span class="font-semibold">@publishedChapters</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-ink-blue/70">Drafts</span>
-                        <span class="font-semibold">@draftChapters</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-ink-blue/70">Paid Chapters</span>
-                        <span class="font-semibold">@paidChapters</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-ink-blue/70">Avg Price</span>
-                        <span class="font-semibold">@(avgPrice == 0 ? "Free" : $"{avgPrice:0.##} Coins")</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-5">
-                <h2 class="text-xl font-display text-deep-navy">Publication Schedule</h2>
-                <p class="mt-3 text-sm text-ink-blue/70">
-                    Last update: @Model.UpdatedAt.ToLocalTime().ToString("g")
-                </p>
-                <a asp-controller="Chapter"
-                   asp-action="Index"
-                   asp-route-novelId="@Model.Id"
-                   asp-route-novelSlug="@Model.Slug"
-                   class="btn-ghost mt-4 py-2 px-4">
-                    Manage Chapters
-                </a>
-            </div>
-        </section>
-    </div>
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="card-book"><p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Total chapters</p><p class="mt-2 text-3xl font-display text-deep-navy">@Model.TotalChapters</p></article>
+        <article class="card-book"><p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Published</p><p class="mt-2 text-3xl font-display text-deep-navy">@Model.PublishedChapters</p></article>
+        <article class="card-book"><p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Reads</p><p class="mt-2 text-3xl font-display text-deep-navy">@(Model.ReadsCount?.ToString() ?? "--")</p></article>
+        <article class="card-book"><p class="text-xs uppercase tracking-[0.12em] text-ink-blue/60">Purchases</p><p class="mt-2 text-3xl font-display text-deep-navy">@(Model.PurchasesCount?.ToString() ?? "--")</p></article>
+    </section>
 
     <section class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-5">
         <div class="mb-4 flex items-center justify-between">
-            <h2 class="text-xl font-display text-deep-navy">Recent Chapters</h2>
-            <a asp-controller="Chapter"
-               asp-action="Index"
-               asp-route-novelId="@Model.Id"
-               asp-route-novelSlug="@Model.Slug"
-               class="text-sm font-semibold text-antique-gold hover:underline">
-                View All Chapters
-            </a>
+            <h2 class="text-xl font-display text-deep-navy">Chapters</h2>
+            <div class="text-xs text-ink-blue/60">Locked / price / status overview</div>
         </div>
 
-        @if (recentChapters.Count == 0)
+        @if (Model.Chapters.Count == 0)
         {
             <p class="text-sm text-ink-blue/60">No chapters yet.</p>
         }
         else
         {
-            <div class="space-y-3">
-                @foreach (var chapter in recentChapters)
-                {
-                    <div class="flex flex-wrap items-center justify-between gap-3 border border-ink-blue/10 rounded-[var(--radius-inner)] p-3">
-                        <div>
-                            <p class="font-medium text-deep-navy">Chapter @chapter.ChapterNumber: @chapter.Title</p>
-                            <p class="text-xs text-ink-blue/60">
-                                @chapter.WordCount words · @(chapter.Status == Reading_Writing_Platform.Models.ChapterStatus.Published ? "Published" : "Draft")
-                            </p>
-                        </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-paper-grey/35 text-ink-blue/70 uppercase text-xs">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Ch.</th>
+                            <th class="px-4 py-3 text-left">Title</th>
+                            <th class="px-4 py-3 text-left">Status</th>
+                            <th class="px-4 py-3 text-left">Locked</th>
+                            <th class="px-4 py-3 text-left">Price</th>
+                            <th class="px-4 py-3 text-left">Purchases</th>
+                            <th class="px-4 py-3 text-left">Updated</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var chapter in Model.Chapters)
+                        {
+                            string chapterStatusClass = chapter.Status == ChapterStatus.Published
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : "bg-slate-100 text-slate-700 border border-slate-200";
 
-                        <div class="flex gap-2">
-                            <a asp-controller="Chapter"
-                               asp-action="Edit"
-                               asp-route-id="@chapter.Id"
-                               asp-route-novelId="@Model.Id"
-                               asp-route-novelSlug="@Model.Slug"
-                               class="btn-ghost py-1.5 px-3 text-xs">
-                                Edit
-                            </a>
-                        </div>
-                    </div>
-                }
+                            <tr class="border-t border-ink-blue/10">
+                                <td class="px-4 py-4 font-medium">@chapter.ChapterNumber</td>
+                                <td class="px-4 py-4"><p class="font-medium text-deep-navy">@chapter.Title</p><p class="text-xs text-ink-blue/60">@chapter.WordCount words</p></td>
+                                <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium @chapterStatusClass">@chapter.Status</span></td>
+                                <td class="px-4 py-4 text-ink-blue/75">@(chapter.IsLocked ? "Yes" : "No")</td>
+                                <td class="px-4 py-4 text-ink-blue/75">@(chapter.BasePrice > 0 ? $"{chapter.BasePrice} Coins" : "Free")</td>
+                                <td class="px-4 py-4 text-ink-blue/75">@(chapter.PurchasesCount?.ToString() ?? "--")</td>
+                                <td class="px-4 py-4 text-ink-blue/70">@chapter.UpdatedAt.ToLocalTime().ToString("g")</td>
+                                <td class="px-4 py-4">
+                                    <div class="flex justify-end gap-2">
+                                        <a href="@Url.Action("Edit", "Chapter", new { novelId = Model.Id, novelSlug = Model.Slug, id = chapter.Id })" class="btn-ghost py-1.5 px-3 text-xs">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <a asp-action="Details" asp-route-id="@Model.Id" asp-route-chapterPage="@(Model.ChapterPage - 1)" asp-route-pageSize="@Model.PageSize" class="btn-ghost py-2 px-4 @(Model.ChapterPage <= 1 ? "pointer-events-none opacity-50" : null)">Previous</a>
+                    <div class="flex flex-wrap items-center gap-1 text-sm">
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            <a asp-action="Details" asp-route-id="@Model.Id" asp-route-chapterPage="@p" asp-route-pageSize="@Model.PageSize" class="@(p == Model.ChapterPage ? "nav-pill nav-pill-active" : "nav-pill")">@p</a>
+                        }
+                    </div>
+                    <a asp-action="Details" asp-route-id="@Model.Id" asp-route-chapterPage="@(Model.ChapterPage + 1)" asp-route-pageSize="@Model.PageSize" class="btn-ghost py-2 px-4 @(Model.ChapterPage >= Model.TotalPages ? "pointer-events-none opacity-50" : null)">Next</a>
+                </div>
+            }
         }
     </section>
-
-    <div class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-4 text-sm text-ink-blue/70">
-        Showing @ViewBag.PagedChapters.Count chapters
-        @if (ViewBag.TotalPages > 1)
-        {
-            <span>
-                Page
-                @for (int i = 1; i <= ViewBag.TotalPages; i++)
-                {
-                    if (i == ViewBag.ChapterPage)
-                    {
-                        <strong>@i</strong>
-                    }
-                    else
-                    {
-                        <a asp-action="Details"
-                           asp-route-id="@Model.Id"
-                           asp-route-tab="@ViewBag.ActiveTab"
-                           asp-route-chapterPage="@i"
-                           class="text-ink-blue hover:underline">
-                            @i
-                        </a>
-                    }
-
-                    @if (i < ViewBag.TotalPages)
-                    {
-                        <span class="text-ink-blue/30">, </span>
-                    }
-                }
-            </span>
-        }
-    </div>
 </div>

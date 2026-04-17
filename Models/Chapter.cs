@@ -23,8 +23,16 @@ namespace Reading_Writing_Platform.Models
         public ChapterStatus Status { get; set; } = ChapterStatus.Draft;
         public DateTimeOffset? PublishedAt { get; set; }
 
+        // Locked chapter fields (Coins-based)
         public bool IsLocked { get; set; }
-        public decimal BasePrice { get; set; }
+
+        [Range(0, 10000)]
+        [Display(Name = "Price (Coins)")]
+        public int BasePrice { get; set; }
+
+        [Range(0, 10000)]
+        [Display(Name = "Preview character count")]
+        public int PreviewCharCount { get; set; } = 500;
 
         public int WordCount { get; set; }
 
@@ -33,5 +41,49 @@ namespace Reading_Writing_Platform.Models
 
         [Timestamp]
         public byte[] RowVersion { get; set; } = [];
+
+        // Helper methods
+        public string GetPreviewContent()
+        {
+            if (string.IsNullOrWhiteSpace(Content))
+            {
+                return string.Empty;
+            }
+
+            if (!IsLocked || PreviewCharCount <= 0)
+            {
+                return Content;
+            }
+
+            if (Content.Length <= PreviewCharCount)
+            {
+                return Content;
+            }
+
+            return Content[..PreviewCharCount] + "...";
+        }
+
+        public bool CanUserAccess(string? userId, ICollection<ChapterEntitlement>? entitlements)
+        {
+            if (!IsLocked)
+            {
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return false;
+            }
+
+            if (entitlements == null || !entitlements.Any())
+            {
+                return false;
+            }
+
+            return entitlements.Any(e =>
+                e.ChapterId == Id &&
+                e.UserId == userId &&
+                e.GrantedAt <= DateTimeOffset.UtcNow);
+        }
     }
 }

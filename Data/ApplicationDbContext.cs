@@ -17,6 +17,9 @@ namespace Reading_Writing_Platform.Data
         public DbSet<Theme> Themes => Set<Theme>();
         public DbSet<NovelTheme> NovelThemes => Set<NovelTheme>();
         public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+        public DbSet<ChapterEntitlement> ChapterEntitlements => Set<ChapterEntitlement>();
+        public DbSet<UserWallet> UserWallets => Set<UserWallet>();
+        public DbSet<CoinTransaction> CoinTransactions => Set<CoinTransaction>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -79,6 +82,54 @@ namespace Reading_Writing_Platform.Data
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<ChapterEntitlement>(entity =>
+            {
+                entity.HasIndex(x => new { x.ChapterId, x.UserId });
+                entity.HasIndex(x => x.UserId);
+
+                entity.HasOne(x => x.Chapter)
+                    .WithMany()
+                    .HasForeignKey(x => x.ChapterId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Transaction)
+                    .WithMany()
+                    .HasForeignKey(x => x.TransactionId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            builder.Entity<UserWallet>(entity =>
+            {
+                entity.HasIndex(x => x.UserId).IsUnique();
+
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CoinTransaction>(entity =>
+            {
+                entity.HasIndex(x => x.UserId);
+                entity.HasIndex(x => x.ChapterId);
+                entity.HasIndex(x => x.CreatedAt);
+
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Chapter)
+                    .WithMany()
+                    .HasForeignKey(x => x.ChapterId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

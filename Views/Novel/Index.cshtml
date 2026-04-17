@@ -12,9 +12,9 @@
 <div class="space-y-8">
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-            <h1 class="text-4xl font-display text-deep-navy">My Novels</h1>
+            <h1 class="text-4xl font-display text-deep-navy">Author Dashboard</h1>
             <p class="mt-2 text-sm text-ink-blue/70">
-                Manage your stories, track progress, and publish new chapters.
+                Overview of your novels, status, and quick actions.
             </p>
         </div>
         <a asp-action="Create" class="btn-gold">+ Create Novel</a>
@@ -107,13 +107,10 @@
                             <div class="mt-4 flex flex-wrap gap-2">
                                 <a asp-action="Details" asp-route-id="@novel.Id" class="btn-ghost py-2 px-4">Details</a>
                                 <a asp-action="Edit" asp-route-id="@novel.Id" class="btn-primary py-2 px-4">Edit</a>
-                                <a asp-controller="Chapter"
-                                   asp-action="Index"
-                                   asp-route-novelId="@novel.Id"
-                                   asp-route-novelSlug="@novel.Slug"
-                                   class="btn-gold py-2 px-4">
-                                    Chapters
-                                </a>
+                                <a href="@Url.Action("Index", "Chapter", new { novelId = novel.Id, novelSlug = novel.Slug })"
+   class="btn-ghost py-2 px-4">
+    Chapters
+</a>
                                 <a asp-action="Delete" asp-route-id="@novel.Id" class="btn-ghost py-2 px-4">Delete</a>
                             </div>
                         </div>

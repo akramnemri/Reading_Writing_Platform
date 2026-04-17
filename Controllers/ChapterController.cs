@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
 using Reading_Writing_Platform.Models;
@@ -103,7 +104,35 @@ namespace Reading_Writing_Platform.Controllers
             ViewBag.TotalPages = totalPages;
             ViewBag.FilteredCount = filteredCount;
 
+            // Ajouter ces URLs pré-construites
+            string baseUrl = $"/novels/{novelId}/{novelSlug}/chapters";
+            ViewBag.CreateUrl = baseUrl + "/create";
+            ViewBag.FilterAllUrl = BuildFilterUrl(baseUrl, "all", q, pageSize);
+            ViewBag.FilterPublishedUrl = BuildFilterUrl(baseUrl, "published", q, pageSize);
+            ViewBag.FilterScheduledUrl = BuildFilterUrl(baseUrl, "scheduled", q, pageSize);
+            ViewBag.FilterDraftUrl = BuildFilterUrl(baseUrl, "draft", q, pageSize);
+
             return View(chapters);
+        }
+
+        private string BuildFilterUrl(string baseUrl, string status, string? q, int pageSize)
+        {
+            var query = new List<string>();
+            
+            if (!string.IsNullOrWhiteSpace(status) && status != "all")
+            {
+                query.Add($"status={status}");
+            }
+            
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                query.Add($"q={Uri.EscapeDataString(q)}");
+            }
+            
+            query.Add("page=1");
+            query.Add($"pageSize={pageSize}");
+            
+            return baseUrl + (query.Count > 0 ? "?" + string.Join("&", query) : "");
         }
 
         [HttpGet("create")]
@@ -155,6 +184,7 @@ namespace Reading_Writing_Platform.Controllers
                 Status = vm.Status,
                 IsLocked = vm.IsLocked,
                 BasePrice = vm.BasePrice,
+                PreviewCharCount = vm.PreviewCharCount,
                 Order = vm.Order < 1 ? 1 : vm.Order,
                 ChapterNumber = 0,
                 WordCount = CountWords(vm.Content),
@@ -163,11 +193,20 @@ namespace Reading_Writing_Platform.Controllers
                 UpdatedAt = DateTimeOffset.UtcNow
             };
 
-            _dbContext.Chapters.Add(chapter);
-            await _dbContext.SaveChangesAsync();
-            await NormalizeChapterOrderingAsync(novelId);
-
-            return RedirectToAction(nameof(Index), new { novelId, novelSlug = novel.Slug });
+            try
+            {
+                _dbContext.Chapters.Add(chapter);
+                await _dbContext.SaveChangesAsync();
+                await NormalizeChapterOrderingAsync(novelId);
+                return RedirectToAction(nameof(Index), new { novelId, novelSlug = novel.Slug });
+            }
+            catch (DbUpdateException ex) when (IsSqlServerUniqueConstraintViolation(ex, "IX_Chapters_NovelId_ChapterNumber", "IX_Chapters_NovelId_Order"))
+            {
+                ModelState.AddModelError(nameof(vm.Order), "Another chapter already uses this number/order. Change the position and retry.");
+                vm.NovelId = novelId;
+                vm.NovelSlug = novel.Slug;
+                return View(vm);
+            }
         }
 
         [HttpGet("{id:guid}/edit")]
@@ -197,6 +236,7 @@ namespace Reading_Writing_Platform.Controllers
                 Status = chapter.Status,
                 IsLocked = chapter.IsLocked,
                 BasePrice = chapter.BasePrice,
+                PreviewCharCount = chapter.PreviewCharCount,
                 Order = chapter.Order,
                 RowVersion = chapter.RowVersion
             };
@@ -241,6 +281,7 @@ namespace Reading_Writing_Platform.Controllers
             chapter.Status = vm.Status;
             chapter.IsLocked = vm.IsLocked;
             chapter.BasePrice = vm.BasePrice;
+            chapter.PreviewCharCount = vm.PreviewCharCount;
             chapter.Order = vm.Order < 1 ? 1 : vm.Order;
             chapter.WordCount = CountWords(vm.Content);
             chapter.UpdatedAt = DateTimeOffset.UtcNow;
@@ -263,9 +304,37 @@ namespace Reading_Writing_Platform.Controllers
                 await NormalizeChapterOrderingAsync(novelId);
                 return RedirectToAction(nameof(Index), new { novelId, novelSlug = novel.Slug });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
-                ModelState.AddModelError(string.Empty, "This chapter was modified by another user. Reload and try again.");
+                var entry = ex.Entries.SingleOrDefault();
+                if (entry?.Entity is Chapter)
+                {
+                    var databaseValues = await entry.GetDatabaseValuesAsync();
+                    if (databaseValues is null)
+                    {
+                        ModelState.AddModelError(string.Empty, "This chapter was deleted by another user.");
+                    }
+                    else
+                    {
+                        var databaseChapter = (Chapter)databaseValues.ToObject();
+                        vm.RowVersion = databaseChapter.RowVersion;
+                        ModelState.AddModelError(string.Empty, "This chapter was modified by another user. Reload and apply your changes again.");
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "A concurrency error occurred. Reload and try again.");
+                }
+
+                vm.NovelId = novelId;
+                vm.NovelSlug = novel.Slug;
+                return View(vm);
+            }
+            catch (DbUpdateException ex) when (IsSqlServerUniqueConstraintViolation(ex, "IX_Chapters_NovelId_ChapterNumber", "IX_Chapters_NovelId_Order"))
+            {
+                ModelState.AddModelError(nameof(vm.Order), "Another chapter already uses this number/order. Change the position and retry.");
+                vm.NovelId = novelId;
+                vm.NovelSlug = novel.Slug;
                 return View(vm);
             }
         }
@@ -355,6 +424,26 @@ namespace Reading_Writing_Platform.Controllers
             return content
                 .Split([' ', '\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries)
                 .Length;
+        }
+
+        private static bool IsSqlServerUniqueConstraintViolation(DbUpdateException ex, params string[] indexNames)
+        {
+            if (ex.InnerException is not SqlException sqlEx)
+            {
+                return false;
+            }
+
+            if (sqlEx.Number != 2601 && sqlEx.Number != 2627)
+            {
+                return false;
+            }
+
+            if (indexNames.Length == 0)
+            {
+                return true;
+            }
+
+            return indexNames.Any(indexName => sqlEx.Message.Contains(indexName, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

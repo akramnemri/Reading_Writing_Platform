@@ -3,7 +3,6 @@
 
 @{
     var novel = (Novel)ViewBag.Novel;
-
     string activeStatus = ((string?)ViewBag.Status ?? "all").ToLowerInvariant();
     string? query = ViewBag.Query as string;
 
@@ -15,6 +14,15 @@
     int page = (int)(ViewBag.Page ?? 1);
     int totalPages = (int)(ViewBag.TotalPages ?? 1);
     int pageSize = (int)(ViewBag.PageSize ?? 10);
+    int filteredCount = (int)(ViewBag.FilteredCount ?? 0);
+
+    string createUrl = (string)ViewBag.CreateUrl;
+    string filterAllUrl = (string)ViewBag.FilterAllUrl;
+    string filterPublishedUrl = (string)ViewBag.FilterPublishedUrl;
+    string filterScheduledUrl = (string)ViewBag.FilterScheduledUrl;
+    string filterDraftUrl = (string)ViewBag.FilterDraftUrl;
+
+    string baseChapterUrl = $"/novels/{novel.Id}/{novel.Slug}/chapters";
 }
 
 <div class="space-y-6">
@@ -36,33 +44,27 @@
 
         <div class="flex flex-wrap gap-2">
             <a asp-controller="Novel" asp-action="Edit" asp-route-id="@novel.Id" class="btn-ghost py-2 px-4">Novel Settings</a>
-            <a asp-action="Create" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" class="btn-gold py-2 px-4">+ Create Chapter</a>
+            <a href="@createUrl" class="btn-gold py-2 px-4">+ Create Chapter</a>
         </div>
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink-blue/10 pb-3">
         <div class="flex flex-wrap items-center gap-2 text-sm">
-            <a asp-action="Index" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" asp-route-status="all" asp-route-q="@query" asp-route-page="1" asp-route-pageSize="@pageSize"
-               class="@(activeStatus == "all" ? "nav-pill nav-pill-active" : "nav-pill")">
+            <a href="@filterAllUrl" class="@(activeStatus == "all" ? "nav-pill nav-pill-active" : "nav-pill")">
                 All (@allCount)
             </a>
-            <a asp-action="Index" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" asp-route-status="published" asp-route-q="@query" asp-route-page="1" asp-route-pageSize="@pageSize"
-               class="@(activeStatus == "published" ? "nav-pill nav-pill-active" : "nav-pill")">
+            <a href="@filterPublishedUrl" class="@(activeStatus == "published" ? "nav-pill nav-pill-active" : "nav-pill")">
                 Published (@publishedCount)
             </a>
-            <a asp-action="Index" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" asp-route-status="scheduled" asp-route-q="@query" asp-route-page="1" asp-route-pageSize="@pageSize"
-               class="@(activeStatus == "scheduled" ? "nav-pill nav-pill-active" : "nav-pill")">
+            <a href="@filterScheduledUrl" class="@(activeStatus == "scheduled" ? "nav-pill nav-pill-active" : "nav-pill")">
                 Scheduled (@scheduledCount)
             </a>
-            <a asp-action="Index" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" asp-route-status="draft" asp-route-q="@query" asp-route-page="1" asp-route-pageSize="@pageSize"
-               class="@(activeStatus == "draft" ? "nav-pill nav-pill-active" : "nav-pill")">
+            <a href="@filterDraftUrl" class="@(activeStatus == "draft" ? "nav-pill nav-pill-active" : "nav-pill")">
                 Drafts (@draftCount)
             </a>
         </div>
 
-        <form method="get" class="flex flex-wrap items-center gap-2">
-            <input type="hidden" name="novelId" value="@novel.Id" />
-            <input type="hidden" name="novelSlug" value="@novel.Slug" />
+        <form method="get" action="@baseChapterUrl" class="flex flex-wrap items-center gap-2">
             <input type="hidden" name="status" value="@activeStatus" />
             <input type="hidden" name="pageSize" value="@pageSize" />
             <input type="text" name="q" value="@query" placeholder="Search chapters..."
@@ -71,31 +73,52 @@
         </form>
     </div>
 
-    <div class="overflow-x-auto rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white">
-        <table class="min-w-full text-sm">
-            <thead class="bg-paper-grey/35 text-ink-blue/70 uppercase text-xs">
-                <tr>
-                    <th class="px-4 py-3 text-left w-12">
-                        <input type="checkbox" class="h-4 w-4 rounded border-ink-blue/30" />
-                    </th>
-                    <th class="px-4 py-3 text-left">Ch.</th>
-                    <th class="px-4 py-3 text-left">Title</th>
-                    <th class="px-4 py-3 text-left">Status</th>
-                    <th class="px-4 py-3 text-left">Access</th>
-                    <th class="px-4 py-3 text-left">Performance</th>
-                    <th class="px-4 py-3 text-left">Date</th>
-                    <th class="px-4 py-3 text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.Count == 0)
+    @if (filteredCount == 0)
+    {
+        <div class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-8 text-center">
+            <svg class="mx-auto h-12 w-12 text-ink-blue/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 class="mt-4 text-lg font-display text-deep-navy">No chapters found</h3>
+            <p class="mt-2 text-sm text-ink-blue/70">
+                @if (!string.IsNullOrWhiteSpace(query))
                 {
-                    <tr>
-                        <td colspan="8" class="px-4 py-8 text-center text-ink-blue/60">No chapters found.</td>
-                    </tr>
+                    <span>No chapters match your search "<strong>@query</strong>".</span>
+                }
+                else if (activeStatus != "all")
+                {
+                    <span>No chapters with status "<strong>@activeStatus</strong>".</span>
                 }
                 else
                 {
+                    <span>Start writing by creating your first chapter.</span>
+                }
+            </p>
+            <div class="mt-6 flex justify-center gap-2">
+                <a href="@createUrl" class="btn-gold py-2 px-4">+ Create Chapter</a>
+                <a href="@baseChapterUrl" class="btn-ghost py-2 px-4">Clear filters</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white">
+            <table class="min-w-full text-sm">
+                <thead class="bg-paper-grey/35 text-ink-blue/70 uppercase text-xs">
+                    <tr>
+                        <th class="px-4 py-3 text-left w-12">
+                            <input type="checkbox" class="h-4 w-4 rounded border-ink-blue/30" />
+                        </th>
+                        <th class="px-4 py-3 text-left">Ch.</th>
+                        <th class="px-4 py-3 text-left">Title</th>
+                        <th class="px-4 py-3 text-left">Status</th>
+                        <th class="px-4 py-3 text-left">Access</th>
+                        <th class="px-4 py-3 text-left">Performance</th>
+                        <th class="px-4 py-3 text-left">Date</th>
+                        <th class="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
                     @foreach (var chapter in Model)
                     {
                         string statusClass = chapter.Status switch
@@ -105,8 +128,8 @@
                         };
 
                         string accessText = chapter.IsLocked
-                            ? (chapter.BasePrice > 0 ? $"Paid ({chapter.BasePrice:0.##} Coins)" : "Locked")
-                            : (chapter.BasePrice > 0 ? $"{chapter.BasePrice:0.##} Coins" : "Free");
+                            ? (chapter.BasePrice > 0 ? $"Paid ({chapter.BasePrice} Coins)" : "Locked")
+                            : (chapter.BasePrice > 0 ? $"{chapter.BasePrice} Coins" : "Free");
 
                         <tr class="border-t border-ink-blue/10">
                             <td class="px-4 py-4">
@@ -125,62 +148,39 @@
                             <td class="px-4 py-4 text-ink-blue/70">@chapter.UpdatedAt.ToLocalTime().ToString("g")</td>
                             <td class="px-4 py-4">
                                 <div class="flex justify-end gap-2">
-                                    <a asp-action="Edit"
-                                       asp-route-id="@chapter.Id"
-                                       asp-route-novelId="@novel.Id"
-                                       asp-route-novelSlug="@novel.Slug"
-                                       class="btn-ghost py-1.5 px-3 text-xs">Edit</a>
-                                    <a asp-action="Delete"
-                                       asp-route-id="@chapter.Id"
-                                       asp-route-novelId="@novel.Id"
-                                       asp-route-novelSlug="@novel.Slug"
-                                       class="btn-ghost py-1.5 px-3 text-xs">Delete</a>
+                                    <a href="@baseChapterUrl/@chapter.Id/edit" class="btn-ghost py-1.5 px-3 text-xs">Edit</a>
+                                    <a href="@baseChapterUrl/@chapter.Id/delete" class="btn-ghost py-1.5 px-3 text-xs">Delete</a>
                                 </div>
                             </td>
                         </tr>
                     }
-                }
-            </tbody>
-        </table>
-    </div>
-
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <a asp-action="Index"
-           asp-route-novelId="@novel.Id"
-           asp-route-novelSlug="@novel.Slug"
-           asp-route-status="@activeStatus"
-           asp-route-q="@query"
-           asp-route-page="@(page - 1)"
-           asp-route-pageSize="@pageSize"
-           class="btn-ghost py-2 px-4 @(page <= 1 ? "pointer-events-none opacity-50" : null)">
-            Previous
-        </a>
-
-        <div class="flex flex-wrap items-center gap-1 text-sm">
-            @for (int p = 1; p <= totalPages; p++)
-            {
-                <a asp-action="Index"
-                   asp-route-novelId="@novel.Id"
-                   asp-route-novelSlug="@novel.Slug"
-                   asp-route-status="@activeStatus"
-                   asp-route-q="@query"
-                   asp-route-page="@p"
-                   asp-route-pageSize="@pageSize"
-                   class="@(p == page ? "nav-pill nav-pill-active" : "nav-pill")">
-                    @p
-                </a>
-            }
+                </tbody>
+            </table>
         </div>
 
-        <a asp-action="Index"
-           asp-route-novelId="@novel.Id"
-           asp-route-novelSlug="@novel.Slug"
-           asp-route-status="@activeStatus"
-           asp-route-q="@query"
-           asp-route-page="@(page + 1)"
-           asp-route-pageSize="@pageSize"
-           class="btn-ghost py-2 px-4 @(page >= totalPages ? "pointer-events-none opacity-50" : null)">
-            Next
-        </a>
-    </div>
+        @if (totalPages > 1)
+        {
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <a href="@baseChapterUrl?status=@activeStatus&q=@query&page=@(page-1)&pageSize=@pageSize"
+                   class="btn-ghost py-2 px-4 @(page <= 1 ? "pointer-events-none opacity-50" : null)">
+                    Previous
+                </a>
+
+                <div class="flex flex-wrap items-center gap-1 text-sm">
+                    @for (int p = 1; p <= totalPages; p++)
+                    {
+                        <a href="@baseChapterUrl?status=@activeStatus&q=@query&page=@p&pageSize=@pageSize"
+                           class="@(p == page ? "nav-pill nav-pill-active" : "nav-pill")">
+                            @p
+                        </a>
+                    }
+                </div>
+
+                <a href="@baseChapterUrl?status=@activeStatus&q=@query&page=@(page+1)&pageSize=@pageSize"
+                   class="btn-ghost py-2 px-4 @(page >= totalPages ? "pointer-events-none opacity-50" : null)">
+                    Next
+                </a>
+            </div>
+        }
+    }
 </div>

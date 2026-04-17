@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
 using Reading_Writing_Platform.Models;
@@ -21,70 +22,126 @@ namespace Reading_Writing_Platform.Controllers
             _dbContext = dbContext;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
         {
-            IQueryable<Novel> query = _dbContext.Novels
-                .Include(x => x.NovelThemes)
-                .ThenInclude(x => x.Theme)
-                .Include(x => x.Chapters);
-
-            if (!User.IsInRole(RoleNames.Admin))
+            if (page < 1)
             {
-                string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                query = query.Where(x => x.AuthorUserId == userId);
+                page = 1;
             }
 
-            var novels = await query
+            pageSize = Math.Clamp(pageSize, 5, 30);
+
+            IQueryable<Novel> novelsQuery = QueryOwnedOrAdminNovels()
+                .AsNoTracking();
+
+            int totalNovels = await novelsQuery.CountAsync();
+            int publishedNovels = await novelsQuery.CountAsync(x => x.Status == NovelStatus.Published);
+            int draftNovels = await novelsQuery.CountAsync(x => x.Status == NovelStatus.Draft);
+            int submittedNovels = await novelsQuery.CountAsync(x => x.Status == NovelStatus.Submitted);
+
+            int totalPages = Math.Max(1, (int)Math.Ceiling(totalNovels / (double)pageSize));
+            if (page > totalPages)
+            {
+                page = totalPages;
+            }
+
+            var novelItems = await novelsQuery
                 .OrderByDescending(x => x.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new AuthorDashboardNovelItemViewModel
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Slug = x.Slug,
+                    Status = x.Status,
+                    ChapterCount = x.Chapters.Count,
+                    PublishedChapterCount = x.Chapters.Count(c => c.Status == ChapterStatus.Published),
+                    DraftChapterCount = x.Chapters.Count(c => c.Status == ChapterStatus.Draft),
+                    TotalWordCount = x.Chapters.Sum(c => (int?)c.WordCount) ?? 0,
+                    ReadsCount = null,
+                    UpdatedAt = x.UpdatedAt
+                })
                 .ToListAsync();
 
-            return View(novels);
+            var novelIds = novelItems.Select(x => x.Id).ToList();
+
+            Dictionary<Guid, int> purchasesByNovel = [];
+            if (novelIds.Count > 0)
+            {
+                purchasesByNovel = await (
+                    from entitlement in _dbContext.ChapterEntitlements.AsNoTracking()
+                    join chapter in _dbContext.Chapters.AsNoTracking()
+                        on entitlement.ChapterId equals chapter.Id
+                    where novelIds.Contains(chapter.NovelId)
+                    group entitlement by chapter.NovelId
+                    into grouped
+                    select new
+                    {
+                        NovelId = grouped.Key,
+                        Count = grouped.Count()
+                    })
+                    .ToDictionaryAsync(x => x.NovelId, x => x.Count);
+            }
+
+            foreach (var item in novelItems)
+            {
+                item.PurchasesCount = purchasesByNovel.GetValueOrDefault(item.Id, 0);
+            }
+
+            var vm = new AuthorDashboardViewModel
+            {
+                Novels = novelItems,
+                TotalNovels = totalNovels,
+                PublishedNovels = publishedNovels,
+                DraftNovels = draftNovels,
+                SubmittedNovels = submittedNovels,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = totalPages
+            };
+
+            return View(vm);
         }
 
-        public async Task<IActionResult> Details(Guid id, string tab = "overview", int chapterPage = 1, int pageSize = 5)
+        public async Task<IActionResult> Details(Guid id, int chapterPage = 1, int pageSize = 10)
         {
             if (chapterPage < 1)
             {
                 chapterPage = 1;
             }
 
-            pageSize = Math.Clamp(pageSize, 3, 20);
+            pageSize = Math.Clamp(pageSize, 5, 30);
 
-            var novel = await QueryOwnedOrAdminNovels()
-                .Include(x => x.NovelThemes)
-                .ThenInclude(x => x.Theme)
-                .FirstOrDefaultAsync(x => x.Id == id);
+            var novelHeader = await QueryOwnedOrAdminNovels()
+                .AsNoTracking()
+                .Where(x => x.Id == id)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Title,
+                    x.Slug,
+                    x.Description,
+                    x.CoverImageUrl,
+                    x.Status,
+                    x.UpdatedAt
+                })
+                .FirstOrDefaultAsync();
 
-            if (novel is null)
+            if (novelHeader is null)
             {
                 return NotFound();
             }
 
-            var chaptersQuery = _dbContext.Chapters
+            IQueryable<Chapter> chaptersQuery = _dbContext.Chapters
                 .AsNoTracking()
                 .Where(x => x.NovelId == id);
 
             int totalChapters = await chaptersQuery.CountAsync();
             int publishedChapters = await chaptersQuery.CountAsync(x => x.Status == ChapterStatus.Published);
             int draftChapters = await chaptersQuery.CountAsync(x => x.Status == ChapterStatus.Draft);
-            int totalWords = await chaptersQuery.SumAsync(x => (int?)x.WordCount) ?? 0;
             int paidChapters = await chaptersQuery.CountAsync(x => x.BasePrice > 0);
-
-            decimal avgPrice = paidChapters == 0
-                ? 0m
-                : await chaptersQuery.Where(x => x.BasePrice > 0).AverageAsync(x => x.BasePrice);
-
-            var chartData = await chaptersQuery
-                .OrderByDescending(x => x.ChapterNumber)
-                .Select(x => x.WordCount)
-                .Take(7)
-                .ToListAsync();
-            chartData.Reverse();
-
-            var recentChapters = await chaptersQuery
-                .OrderByDescending(x => x.ChapterNumber)
-                .Take(3)
-                .ToListAsync();
+            int totalWords = await chaptersQuery.SumAsync(x => (int?)x.WordCount) ?? 0;
 
             int totalPages = Math.Max(1, (int)Math.Ceiling(totalChapters / (double)pageSize));
             if (chapterPage > totalPages)
@@ -92,30 +149,82 @@ namespace Reading_Writing_Platform.Controllers
                 chapterPage = totalPages;
             }
 
-            var pagedChapters = await chaptersQuery
+            var chapterItems = await chaptersQuery
                 .OrderByDescending(x => x.ChapterNumber)
                 .Skip((chapterPage - 1) * pageSize)
                 .Take(pageSize)
+                .Select(x => new NovelDetailsChapterItemViewModel
+                {
+                    Id = x.Id,
+                    ChapterNumber = x.ChapterNumber,
+                    Title = x.Title,
+                    Status = x.Status,
+                    IsLocked = x.IsLocked,
+                    BasePrice = x.BasePrice,
+                    WordCount = x.WordCount,
+                    UpdatedAt = x.UpdatedAt,
+                    PurchasesCount = _dbContext.ChapterEntitlements.Count(e => e.ChapterId == x.Id)
+                })
                 .ToListAsync();
 
-            ViewBag.ActiveTab = string.IsNullOrWhiteSpace(tab) ? "overview" : tab.ToLowerInvariant();
+            int purchasesCount = await (
+                from entitlement in _dbContext.ChapterEntitlements.AsNoTracking()
+                join chapter in _dbContext.Chapters.AsNoTracking()
+                    on entitlement.ChapterId equals chapter.Id
+                where chapter.NovelId == id
+                select entitlement.Id)
+                .CountAsync();
 
-            ViewBag.TotalChapters = totalChapters;
-            ViewBag.PublishedChapters = publishedChapters;
-            ViewBag.DraftChapters = draftChapters;
-            ViewBag.TotalWords = totalWords;
-            ViewBag.PaidChapters = paidChapters;
-            ViewBag.AvgPrice = avgPrice;
+            var vm = new NovelDetailsViewModel
+            {
+                Id = novelHeader.Id,
+                Title = novelHeader.Title,
+                Slug = novelHeader.Slug,
+                Description = novelHeader.Description,
+                CoverImageUrl = novelHeader.CoverImageUrl,
+                Status = novelHeader.Status,
+                UpdatedAt = novelHeader.UpdatedAt,
+                TotalChapters = totalChapters,
+                PublishedChapters = publishedChapters,
+                DraftChapters = draftChapters,
+                PaidChapters = paidChapters,
+                TotalWords = totalWords,
+                ReadsCount = null,
+                PurchasesCount = purchasesCount,
+                Chapters = chapterItems,
+                ChapterPage = chapterPage,
+                PageSize = pageSize,
+                TotalPages = totalPages
+            };
 
-            ViewBag.ChartData = chartData;
-            ViewBag.RecentChapters = recentChapters;
+            return View(vm);
+        }
 
-            ViewBag.PagedChapters = pagedChapters;
-            ViewBag.ChapterPage = chapterPage;
-            ViewBag.PageSize = pageSize;
-            ViewBag.TotalPages = totalPages;
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitForReview(Guid id, string? returnUrl = null)
+        {
+            var novel = await QueryOwnedOrAdminNovels()
+                .FirstOrDefaultAsync(x => x.Id == id);
 
-            return View(novel);
+            if (novel is null)
+            {
+                return NotFound();
+            }
+
+            if (novel.Status != NovelStatus.Draft && novel.Status != NovelStatus.Rejected)
+            {
+                TempData["StatusMessage"] = "Only draft or rejected novels can be submitted for review.";
+                return RedirectToLocalOrDefault(returnUrl, novel.Id);
+            }
+
+            novel.Status = NovelStatus.Submitted;
+            novel.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["StatusMessage"] = "Novel submitted for review.";
+            return RedirectToLocalOrDefault(returnUrl, novel.Id);
         }
 
         public async Task<IActionResult> Create()
@@ -247,9 +356,34 @@ namespace Reading_Writing_Platform.Controllers
                 await _dbContext.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
-                ModelState.AddModelError(string.Empty, "This novel was modified by another user. Reload and try again.");
+                var entry = ex.Entries.SingleOrDefault();
+                if (entry?.Entity is Novel)
+                {
+                    var databaseValues = await entry.GetDatabaseValuesAsync();
+                    if (databaseValues is null)
+                    {
+                        ModelState.AddModelError(string.Empty, "This novel was deleted by another user.");
+                    }
+                    else
+                    {
+                        var databaseNovel = (Novel)databaseValues.ToObject();
+                        vm.RowVersion = databaseNovel.RowVersion;
+                        ModelState.AddModelError(string.Empty, "This novel was modified by another user. Reload and apply your changes again.");
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "A concurrency error occurred. Reload and try again.");
+                }
+
+                vm.AvailableThemes = await GetThemesSelectListAsync(vm.SelectedThemeIds);
+                return View(vm);
+            }
+            catch (DbUpdateException ex) when (IsSqlServerUniqueConstraintViolation(ex, "IX_Novels_Slug"))
+            {
+                ModelState.AddModelError(nameof(vm.Title), "Another novel already uses this slug/title variation. Please adjust the title.");
                 vm.AvailableThemes = await GetThemesSelectListAsync(vm.SelectedThemeIds);
                 return View(vm);
             }
@@ -285,6 +419,16 @@ namespace Reading_Writing_Platform.Controllers
             await _dbContext.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
+        }
+
+        private IActionResult RedirectToLocalOrDefault(string? returnUrl, Guid novelId)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            return RedirectToAction(nameof(Details), new { id = novelId });
         }
 
         private IQueryable<Novel> QueryOwnedOrAdminNovels()
@@ -325,6 +469,26 @@ namespace Reading_Writing_Platform.Controllers
             }
 
             return slug;
+        }
+
+        private static bool IsSqlServerUniqueConstraintViolation(DbUpdateException ex, params string[] indexNames)
+        {
+            if (ex.InnerException is not SqlException sqlEx)
+            {
+                return false;
+            }
+
+            if (sqlEx.Number != 2601 && sqlEx.Number != 2627)
+            {
+                return false;
+            }
+
+            if (indexNames.Length == 0)
+            {
+                return true;
+            }
+
+            return indexNames.Any(indexName => sqlEx.Message.Contains(indexName, StringComparison.OrdinalIgnoreCase));
         }
     }
 }
