@@ -6,13 +6,25 @@
     int totalWords = chapters.Sum(c => c.WordCount);
 }
 
-<div class="space-y-6">
+ <div class="space-y-6">
 
     <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
         <a href="/" class="hover:text-ink-blue">Home</a>
         <span>›</span>
         <span class="text-ink-blue font-medium">@Model.Title</span>
     </nav>
+
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+    {
+        <div class="flex gap-2">
+            <a asp-area="Admin" asp-action="Details" asp-controller="Review" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-warning">
+                ← Review This Draft
+            </a>
+            <a asp-area="Admin" asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                Review Queue
+            </a>
+        </div>
+    }
 
     <section class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-6 shadow-[0_10px_24px_rgba(26,43,60,0.06)]">
         <div class="flex flex-col gap-6 md:flex-row">
@@ -62,26 +74,31 @@
                     <span>@totalWords Total Words</span>
                 </div>
 
-                @if (chapters.Any())
-                {
-                    <div class="mt-5 flex flex-wrap gap-2">
-                        <a asp-controller="PublicNovels"
-                           asp-action="ReadChapter"
-                           asp-route-slug="@Model.Slug"
-                           asp-route-chapterNumber="@chapters.First().ChapterNumber"
-                           class="btn-gold py-2 px-4">
-                            Start Reading
-                        </a>
-                        <a id="continue-btn"
-                           asp-controller="PublicNovels"
-                           asp-action="ReadChapter"
-                           asp-route-slug="@Model.Slug"
-                           asp-route-chapterNumber="1"
-                           class="btn-ghost py-2 px-4 hidden">
-                            Continue Reading
-                        </a>
-                    </div>
-                }
+                 @if (chapters.Any())
+                 {
+                     <div class="mt-5 flex flex-wrap gap-2">
+                         @if (ViewBag.LastReadChapterNumber != null)
+                         {
+                             <a asp-controller="PublicNovels"
+                                asp-action="ReadChapter"
+                                asp-route-slug="@Model.Slug"
+                                asp-route-chapterNumber="@ViewBag.LastReadChapterNumber"
+                                class="btn-primary py-2 px-4">
+                                 Continue Reading (Ch. @ViewBag.LastReadChapterNumber)
+                             </a>
+                         }
+                         else
+                         {
+                             <a asp-controller="PublicNovels"
+                                asp-action="ReadChapter"
+                                asp-route-slug="@Model.Slug"
+                                asp-route-chapterNumber="@chapters.First().ChapterNumber"
+                                class="btn-gold py-2 px-4">
+                                 Start Reading
+                             </a>
+                         }
+                     </div>
+                 }
             </div>
         </div>
     </section>

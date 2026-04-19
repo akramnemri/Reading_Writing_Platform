@@ -42,7 +42,7 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
 
             var user = await _userManager.FindByEmailAsync(Input.Email);
 
-            // Anti-enumeration: même réponse, que le compte existe ou non.
+            // Anti-enumeration: mï¿½me rï¿½ponse, que le compte existe ou non.
             if (user is not null && await _userManager.IsEmailConfirmedAsync(user))
             {
                 var code = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -52,7 +52,7 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
                     values: new { area = "Identity", code, email = Input.Email },
                     protocol: Request.Scheme);
 
-                _logger.LogInformation("Password reset requested for {Email}. Reset URL: {ResetUrl}", Input.Email, callbackUrl);
+                _logger.LogInformation("Password reset requested for {Email}.", Input.Email);
             }
 
             return RedirectToPage("./ForgotPasswordConfirmation");

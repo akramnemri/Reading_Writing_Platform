@@ -1,0 +1,28 @@
+@model Reading_Writing_Platform.Models.Novel
+
+@{
+    ViewData["Title"] = $"Delete {Model.Title}";
+}
+
+<div class="space-y-6 max-w-2xl mx-auto">
+    <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
+        <a asp-action="Index" class="hover:text-ink-blue">My Novels</a>
+        <span>›</span>
+        <span class="text-ink-blue font-medium">Delete</span>
+    </nav>
+
+    <div class="rounded-[var(--radius-outer)] border border-red-200 bg-red-50 p-6">
+        <h1 class="text-2xl font-display text-red-800">Delete Novel</h1>
+        <p class="mt-2 text-sm text-ink-blue/80">
+            Are you sure you want to delete <strong>@Model.Title</strong>? This will permanently delete the novel and all its chapters. This action cannot be undone.
+        </p>
+
+        <form method="post" asp-action="DeleteConfirmed" asp-route-id="@Model.Id" class="mt-6">
+            @Html.AntiForgeryToken()
+            <div class="flex gap-2">
+                <button type="submit" class="btn-danger">Delete</button>
+                <a asp-action="Index" class="btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

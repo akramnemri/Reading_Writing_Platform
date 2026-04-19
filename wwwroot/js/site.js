@@ -1,4 +1,9 @@
-﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-// for details on configuring this project to bundle and minify static web assets.
-
-// Write your JavaScript code.
+﻿// Scroll progress indicator
+window.addEventListener("scroll", () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = max > 0 ? (window.scrollY / max) : 0;
+    const progress = document.getElementById("scroll-progress");
+    if (progress) {
+        progress.style.transform = `scaleX(${Math.min(Math.max(ratio, 0), 1)})`;
+    }
+});

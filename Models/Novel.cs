@@ -32,7 +32,17 @@ namespace Reading_Writing_Platform.Models
         [MaxLength(500)]
         public string? RejectionReason { get; set; }
 
+        public DateTimeOffset? SubmittedForReviewAt { get; set; }
+
+        public int SubmissionCount { get; set; } = 0;
+
         public DateTimeOffset? PublishedAt { get; set; }
+
+        // Review tracking
+        public DateTimeOffset? ReviewedAt { get; set; }
+        [MaxLength(450)]
+        public string? ReviewedByUserId { get; set; }
+        public IdentityUser? ReviewedByUser { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -42,5 +52,8 @@ namespace Reading_Writing_Platform.Models
 
         public ICollection<Chapter> Chapters { get; set; } = [];
         public ICollection<NovelTheme> NovelThemes { get; set; } = [];
+        public ICollection<ReadingProgress> ReadingProgresses { get; set; } = [];
+
+        
     }
 }

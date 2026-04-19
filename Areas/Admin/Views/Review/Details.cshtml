@@ -1,0 +1,350 @@
+﻿@model ReviewDetailsViewModel
+@{
+    ViewData["Title"] = $"Review: {Model.Novel.Title}";
+}
+
+<div class="container-fluid">
+    @if (TempData["SuccessMessage"] != null)
+
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="mb-3">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">← Back to Queue</a>
+    </div>
+
+    <h1 class="mb-4">Review: @Model.Novel.Title</h1>
+
+    @if (!string.IsNullOrEmpty(Model.Novel.RejectionReason))
+
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading">Previous Rejection</h5>
+            <p class="mb-0">@Model.Novel.RejectionReason</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Novel Info & Actions -->
+        <div class="col-lg-4">
+            <div class="card mb-3 shadow-sm">
+                @if (!string.IsNullOrEmpty(Model.Novel.CoverImageUrl))
+
+                {
+                    <img src="@Model.Novel.CoverImageUrl" class="card-img-top" alt="@Model.Novel.Title"
+                         style="max-height: 400px; object-fit: cover;" />
+                }
+                <div class="card-body">
+                    <h4 class="card-title">@Model.Novel.Title</h4>
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted" style="width: 100px;">Author:</td>
+                            <td class="fw-bold">@(Model.Novel.AuthorUser?.UserName ?? "Unknown")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Status:</td>
+                            <td>
+                                @if (Model.Novel.Status == NovelStatus.Rejected)
+                                {
+                                    <span class="badge bg-warning text-dark">Resubmitted after rejection</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info text-dark">New submission</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Submitted:</td>
+                            <td>
+                                @if (Model.Novel.SubmittedForReviewAt.HasValue)
+                                {
+                                    @Model.Novel.SubmittedForReviewAt.Value.ToString("f")
+                                }
+                                else
+                                {
+                                    <text>N/A</text>
+                                }
+                            </td>
+                        </tr>
+                        @if (Model.ReviewedAt.HasValue)
+                        {
+                            <tr>
+                                <td class="text-muted">Reviewed:</td>
+                                <td>
+                                    @Model.ReviewedAt.Value.ToString("f")
+                                    @if (!string.IsNullOrEmpty(Model.ReviewedByUserName))
+                                    {
+                                        <br /><small class="text-muted">by @Model.ReviewedByUserName</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        <tr>
+                            <td class="text-muted">Chapters:</td>
+                            <td>@Model.Chapters.Count</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Total Words:</td>
+                            <td>@Model.Chapters.Sum(x => x.WordCount).ToString("N0")</td>
+                        </tr>
+                    </table>
+                    <hr />
+                    <h6 class="fw-bold">Synopsis</h6>
+                    <p class="card-text">@Model.Novel.Description</p>
+
+                    @if (Model.Novel.NovelThemes.Any())
+
+                    {
+                        <hr />
+                        <h6 class="fw-bold">Themes</h6>
+                        <div>
+                            @foreach (var nt in Model.Novel.NovelThemes)
+
+                            {
+                                <span class="badge bg-secondary me-1 mb-1">@(nt.Theme?.Name ?? "Unknown")</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Admin Actions -->
+            <div class="space-y-4">
+                <!-- Approval / Publish Card -->
+                <div class="card border-success shadow-sm">
+                    <div class="card-header bg-success text-white fw-bold">
+                        Approval & Publishing
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Novel.Status == NovelStatus.Submitted)
+                        {
+                            <form asp-action="Approve" asp-route-id="@Model.Novel.Id" method="post" class="mb-3">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-success w-100 btn-lg"
+                                        onclick="return confirm('Approve this novel? Author will be notified and can publish it.')">
+                                    Approve for Publishing
+                                </button>
+                                <small class="text-muted d-block mt-2 text-center">
+                                    Author can publish after approval
+                                </small>
+                            </form>
+                        }
+                        else if (Model.Novel.Status == NovelStatus.Approved)
+                        {
+                            <form asp-action="Publish" asp-route-id="@Model.Novel.Id" method="post" class="mb-3">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-primary w-100 btn-lg"
+                                        onclick="return confirm('Publish this novel now? It will become visible to all readers.')">
+                                    Publish Now
+                                </button>
+                                <small class="text-muted d-block mt-2 text-center">
+                                    Admin override: publish without author action
+                                </small>
+                            </form>
+                        }
+                        else if (Model.Novel.Status == NovelStatus.Published)
+                        {
+                            <button type="button" class="btn btn-success w-100 btn-lg" disabled>
+                                ✓ Published
+                            </button>
+                            <small class="text-muted d-block mt-2 text-center">
+                                This novel is live and visible to readers.
+                            </small>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-success w-100 btn-lg" disabled>
+                                ⏸ Resubmit Required
+                            </button>
+                            <small class="text-muted d-block mt-2 text-center">
+                                This novel was rejected. The author must resubmit before approval.
+                            </small>
+                        }
+                    </div>
+                </div>
+
+                <!-- Rejection Card -->
+                <div class="card border-danger shadow-sm">
+                    <div class="card-header bg-danger text-white fw-bold">
+                        Rejection
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Reject" asp-route-id="@Model.Novel.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Rejection Reason <span class="text-danger">*</span></label>
+                                <textarea name="rejectionReason" class="form-control" rows="4"
+                                          placeholder="Explain clearly why this novel was rejected. Be constructive..."
+                                          required>@Model.RejectionReason</textarea>
+                                <div class="form-text">Author will see this message and can resubmit after fixing issues.</div>
+                            </div>
+                            <button type="submit" class="btn btn-outline-danger w-100"
+                                    onclick="return confirm('Reject this novel? This will return it to the author.')">
+                                Reject with Feedback
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chapters Preview -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                    <span class="fw-bold fs-5">Chapters Preview</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted">@Model.Chapters.Count total</span>
+                        <a href="@Url.RouteUrl("AuthorChapterIndex", new { novelId = Model.Novel.Id, novelSlug = Model.Novel.Slug })"
+                           class="btn btn-sm btn-outline-primary"
+                           target="_blank"
+                           title="Open chapter management in Author area">
+                            Manage Chapters
+                        </a>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" style="width: 60px;">#</th>
+                                <th>Chapter Title</th>
+                                <th class="text-end" style="width: 100px;">Words</th>
+                                <th class="text-center" style="width: 100px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var chapter in Model.Chapters)
+
+                            {
+                                <tr>
+                                    <td class="text-center text-muted">@chapter.ChapterNumber</td>
+                                    <td>
+                                        <a asp-area="" asp-controller="PublicNovels" asp-action="ReadChapter"
+                                           asp-route-slug="@Model.Novel.Slug"
+                                           asp-route-chapterNumber="@chapter.ChapterNumber"
+                                           target="_blank" class="text-decoration-none fw-bold text-primary">
+                                             @chapter.Title
+                                         </a>
+                                         @if (chapter.Status != ChapterStatus.Published)
+
+                                         {
+                                             <span class="badge bg-secondary ms-2">Preview</span>
+                                         }
+                                    </td>
+                                    <td class="text-end">@chapter.WordCount.ToString("N0")</td>
+                                    <td class="text-center">
+                                        @if (chapter.Status == ChapterStatus.Published)
+
+                                        {
+                                            <span class="badge bg-success">Published</span>
+                                        }
+
+                                        else
+
+                                        {
+                                            <span class="badge bg-secondary">Draft</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (!Model.Chapters.Any())
+
+                {
+                    <div class="card-body text-center text-muted py-5">
+                        <p class="mt-2">No chapters found</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row g-3 mt-2">
+                <div class="col-6 col-md-3">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h3 class="mb-0 text-primary">@Model.Chapters.Sum(x => x.WordCount).ToString("N0")</h3>
+                            <small class="text-muted">Total Words</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h3 class="mb-0 text-info">@Model.Chapters.Count</h3>
+                            <small class="text-muted">Total Chapters</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h3 class="mb-0 text-success">@Model.Chapters.Count(x => x.Status == ChapterStatus.Published)</h3>
+                            <small class="text-muted">Ready</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h3 class="mb-0 text-secondary">@Model.Chapters.Count(x => x.Status == ChapterStatus.Draft)</h3>
+                            <small class="text-muted">Drafts</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <div class="card border-warning shadow-sm mb-3">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    Author Management
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.AuthorBlockedUntil))
+                    {
+                        <p class="mb-2"><strong>Blocked until:</strong> @Model.AuthorBlockedUntil</p>
+                        <form asp-action="UnblockUser" method="post" onsubmit="return confirm('Unblock this user?');">
+                            <input type="hidden" name="userId" value="@Model.AuthorUserId" />
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-warning w-100">Unblock User</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="BlockUser" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="userId" value="@Model.AuthorUserId" />
+                            <div class="mb-2">
+                                <label class="form-label fw-bold">Block Duration (days)</label>
+                                <input type="number" name="days" class="form-control" min="1" max="365" value="7" required />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Reason (optional)</label>
+                                <textarea name="reason" class="form-control" rows="2"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100"
+                                    onclick="return confirm('Block this user? They will be unable to submit new drafts for the specified period.')">
+                                Block Author
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+</div>

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Reading_Writing_Platform.Models
 {
-    public class UserProfile
+    public class ReadingProgress
     {
         public int Id { get; set; }
 
@@ -12,18 +12,15 @@ namespace Reading_Writing_Platform.Models
 
         public IdentityUser? User { get; set; }
 
-        [Required, MaxLength(80)]
-        public string DisplayName { get; set; } = string.Empty;
+        [Required]
+        public Guid NovelId { get; set; }
 
-        [MaxLength(500)]
-        public string? Bio { get; set; }
+        public Novel? Novel { get; set; }
 
-        [MaxLength(500)]
-        public string? AvatarUrl { get; set; }
+        [Required]
+        public int LastReadChapterNumber { get; set; }
 
-        public ProfileIntent Intent { get; set; } = ProfileIntent.Read;
-
-        public DateTimeOffset? BlockedUntil { get; set; }
+        public DateTimeOffset LastReadAt { get; set; } = DateTimeOffset.UtcNow;
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

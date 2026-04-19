@@ -1,0 +1,168 @@
+@model Reading_Writing_Platform.ViewModels.NovelFormViewModel
+
+@{
+    ViewData["Title"] = "Edit Novel";
+    var novelStatus = Model.Status;
+    string badgeClass = novelStatus switch
+    {
+        Reading_Writing_Platform.Models.NovelStatus.Published => "bg-emerald-100 text-emerald-800 border border-emerald-200",
+        Reading_Writing_Platform.Models.NovelStatus.Draft => "bg-slate-100 text-slate-700 border border-slate-200",
+        Reading_Writing_Platform.Models.NovelStatus.Submitted => "bg-amber-100 text-amber-800 border border-amber-200",
+        Reading_Writing_Platform.Models.NovelStatus.Approved => "bg-sky-100 text-sky-800 border border-sky-200",
+        Reading_Writing_Platform.Models.NovelStatus.Rejected => "bg-rose-100 text-rose-800 border border-rose-200",
+        Reading_Writing_Platform.Models.NovelStatus.Paused => "bg-amber-100 text-amber-800 border border-amber-200",
+        Reading_Writing_Platform.Models.NovelStatus.Dropped => "bg-rose-100 text-rose-800 border border-rose-200",
+        Reading_Writing_Platform.Models.NovelStatus.Completed => "bg-emerald-100 text-emerald-800 border border-emerald-200",
+        _ => "bg-paper-grey text-ink-blue border border-ink-blue/10"
+    };
+
+    var submissionCount = Model.SubmissionCount;
+    string statusText = novelStatus.ToString();
+    if (novelStatus == Reading_Writing_Platform.Models.NovelStatus.Submitted && submissionCount > 0)
+    {
+        statusText = $"Submitted ({submissionCount})";
+    }
+}
+
+<div class="space-y-6">
+    <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
+        <a asp-action="Index" class="hover:text-ink-blue">My Novels</a>
+        <span>›</span>
+        <span class="text-ink-blue font-medium">Edit: @Model.Title</span>
+    </nav>
+
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-display text-deep-navy">Edit Novel</h1>
+            <div class="mt-2 flex items-center gap-2">
+                <span class="rounded-full px-2.5 py-1 text-xs font-medium @badgeClass">@statusText</span>
+                @if (novelStatus == Reading_Writing_Platform.Models.NovelStatus.Rejected)
+                {
+                    <span class="text-xs text-rose-700 font-medium">Rejection feedback is shown below. Please revise and resubmit.</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (novelStatus == Reading_Writing_Platform.Models.NovelStatus.Rejected && !string.IsNullOrEmpty(Model.RejectionReason))
+    {
+        <div class="rounded-[var(--radius-inner)] border border-rose-200 bg-rose-50 p-4">
+            <h3 class="text-sm font-semibold text-rose-800">Admin Feedback</h3>
+            <p class="mt-1 text-sm text-ink-blue/90">@Model.RejectionReason</p>
+        </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+            <div class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-6">
+                <h2 class="text-xl font-display text-deep-navy mb-4">Novel Details</h2>
+                <form method="post" class="space-y-4">
+                    <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm"></div>
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="RowVersion" />
+
+                    <div>
+                        <label asp-for="Title" class="block mb-1 text-sm font-medium"></label>
+                        <input asp-for="Title" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+                        <span asp-validation-for="Title" class="text-red-600 text-sm"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Description" class="block mb-1 text-sm font-medium"></label>
+                        <textarea asp-for="Description" rows="5" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></textarea>
+                        <span asp-validation-for="Description" class="text-red-600 text-sm"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="CoverImageUrl" class="block mb-1 text-sm font-medium"></label>
+                        <input asp-for="CoverImageUrl" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+                        <span asp-validation-for="CoverImageUrl" class="text-red-600 text-sm"></span>
+                    </div>
+
+                    <div>
+                        <p class="block mb-1 text-sm font-medium">Themes</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach (var theme in Model.AvailableThemes)
+                            {
+                                <label class="flex items-center gap-2 text-sm">
+                                    <input type="checkbox" name="SelectedThemeIds" value="@theme.Value" checked="@theme.Selected" />
+                                    <span>@theme.Text</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" class="btn-gold">Save Changes</button>
+                        <a asp-action="Index" class="btn-ghost">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1">
+            <div class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-5 space-y-4">
+                <h3 class="text-lg font-display text-deep-navy">Status Actions</h3>
+
+                @if (novelStatus == Reading_Writing_Platform.Models.NovelStatus.Draft || novelStatus == Reading_Writing_Platform.Models.NovelStatus.Rejected)
+                {
+                    <form method="post" asp-action="SubmitForReview" asp-route-id="@Model.Id" onsubmit="return confirm('Submit this novel for review?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-primary w-full">
+                            @(novelStatus == Reading_Writing_Platform.Models.NovelStatus.Rejected ? "Resubmit for Review" : "Submit for Review")
+                        </button>
+                    </form>
+                }
+                else if (novelStatus == Reading_Writing_Platform.Models.NovelStatus.Submitted)
+                {
+                    <form method="post" asp-action="Withdraw" asp-route-id="@Model.Id" onsubmit="return confirm('Withdraw this submission? It will return to Draft status.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-ghost w-full">Withdraw Submission</button>
+                    </form>
+                }
+                else if (novelStatus == Reading_Writing_Platform.Models.NovelStatus.Approved)
+                {
+                    <form method="post" asp-action="Publish" asp-route-id="@Model.Id" onsubmit="return confirm('Publish this novel? It will become visible to all readers.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-primary w-full">Publish Novel</button>
+                    </form>
+                }
+                else if (novelStatus == Reading_Writing_Platform.Models.NovelStatus.Published)
+                {
+                    <div class="space-y-2">
+                        <form method="post" asp-action="SetActiveStatus" asp-route-id="@Model.Id" asp-route-status="@Reading_Writing_Platform.Models.NovelStatus.Paused" onsubmit="return confirm('Pause this novel? New chapters will be hidden until resumed.');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-ghost w-full">Pause</button>
+                        </form>
+                        <form method="post" asp-action="SetActiveStatus" asp-route-id="@Model.Id" asp-route-status="@Reading_Writing_Platform.Models.NovelStatus.Dropped" onsubmit="return confirm('Mark this novel as Dropped/Discontinued? This cannot be undone.');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-ghost w-full text-red-600 border-red-200 hover:bg-red-50">Drop Novel</button>
+                        </form>
+                        <form method="post" asp-action="SetActiveStatus" asp-route-id="@Model.Id" asp-route-status="@Reading_Writing_Platform.Models.NovelStatus.Completed" onsubmit="return confirm('Mark this novel as Completed? No more chapters can be added.');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-ghost w-full text-emerald-600 border-emerald-200 hover:bg-emerald-50">Complete Novel</button>
+                        </form>
+                    </div>
+                }
+                else if (novelStatus == Reading_Writing_Platform.Models.NovelStatus.Paused)
+                {
+                    <form method="post" asp-action="Publish" asp-route-id="@Model.Id" onsubmit="return confirm('Resume this novel? It will become visible again.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-primary w-full">Resume Publishing</button>
+                    </form>
+                }
+
+                <hr class="border-ink-blue/10" />
+
+                <form method="post" asp-action="Delete" asp-route-id="@Model.Id" onsubmit="return confirm('Delete this novel and all its chapters? This cannot be undone.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-danger w-full">Delete Novel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

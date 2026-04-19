@@ -24,6 +24,13 @@ namespace Reading_Writing_Platform.ViewModels
 
         public List<SelectListItem> AvailableThemes { get; set; } = [];
 
+        public List<SelectListItem> AvailableStatuses { get; set; } = [];
+
+        public int SubmissionCount { get; set; } = 0;
+
+        [Display(Name = "Rejection Reason")]
+        public string? RejectionReason { get; set; }
+
         public byte[]? RowVersion { get; set; }
     }
 }

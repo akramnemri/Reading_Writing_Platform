@@ -1,0 +1,58 @@
+feat(admin): complete submission review system with audit trail and admin publishing
+
+Admin Review System (Submission Review UI)
+- Added Admin area with ReviewController (Authorize: Admin role)
+- Review Queue page with pill filters (Pending, Rejected, Approved) showing
+  live counts; lazy-loaded via pagination; filters by theme, author, search.
+- Review Details page displays novel info, themes, chapters preview with
+  word count and status; links to manage chapters in author area; back-to-
+  queue navigation; rejection reason inline.
+- Approval/Rejection actions: POST endpoints with validation; only novels
+  in Submitted status can be approved; rejected novels must be resubmitted.
+- Approval grants Author role automatically.
+
+Reviewer Tracking & Audit History
+- Added ReviewHistory entity to store full audit trail of all review
+  lifecycle events (Submitted, Approved, Rejected, Withdrawn, Published,
+  Paused, Dropped, Completed).
+- Novel model now tracks ReviewedByUserId and ReviewedAt for latest reviewer.
+- All review actions (Approve, Reject, Submit, Withdraw, Publish, status
+  changes) create ReviewHistory entries with actor, action, timestamp,
+  and optional notes.
+- Admin review details show reviewer name and timestamp.
+- Author's Novel Details page includes a Review History section
+  (chronological) so authors see complete status change log and feedback.
+
+Admin Publish Override
+- Admin Review Details page now includes a Publish button for Approved
+  novels, allowing admins to publish directly without author action.
+- Publishes novel and creates a ReviewHistory entry.
+
+UI Polish
+- Chapter list links in admin review page now correctly point to the
+  author's chapter management page (named route AuthorChapterIndex).
+- Admin navigation added to public novel and chapter pages to quickly
+  return to review queue or specific draft.
+- Removed payment-related columns (IsLocked, BasePrice, Price) from
+  admin chapter table and stats; replaced "Paid Chapters" with
+  "Total Chapters".
+- Approve/Reject button states are now context-aware: disabled with
+  descriptive text for non-Submitted novels.
+- Cover image URL validation relaxed to accept any string (including
+  public URLs) by removing [Url] data annotation.
+
+Authorization Fixes
+- Author area controllers (Novel, Chapter) now allow both Member and
+  Admin roles; admins can access author chapter management via the
+  "Manage Chapters" button.
+- NovelController and ChapterController's ownership checks bypassed for
+  admins (QueryOwnedOrAdminNovels / GetOwnedOrAdminNovelAsync).
+
+Other
+- Chapter form now shows a dedicated Publish button next to Save when
+  the novel is Published and the chapter is Draft (only for published
+  novels).
+- Novel Index (My Novels) filter pills fully functional with server-side
+  filtering and accurate unfiltered counts.
+- Migration: AddReviewHistoryAndReviewerTracking adds ReviewHistory table
+  and reviewer tracking columns to Novels with proper indexes/FKs.

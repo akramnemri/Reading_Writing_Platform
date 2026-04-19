@@ -25,11 +25,6 @@
     </div>
 
     <div>
-        <label asp-for="Status" class="block mb-1 text-sm font-medium"></label>
-        <select asp-for="Status" asp-items="Html.GetEnumSelectList<Reading_Writing_Platform.Models.NovelStatus>()" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></select>
-    </div>
-
-    <div>
         <p class="block mb-1 text-sm font-medium">Themes</p>
         <div class="grid grid-cols-2 gap-2">
             @foreach (var theme in Model.AvailableThemes)
