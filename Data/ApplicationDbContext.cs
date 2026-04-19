@@ -17,6 +17,8 @@ namespace Reading_Writing_Platform.Data
         public DbSet<Theme> Themes => Set<Theme>();
         public DbSet<NovelTheme> NovelThemes => Set<NovelTheme>();
         public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+        public DbSet<ReadingProgress> ReadingProgresses => Set<ReadingProgress>();
+        public DbSet<ReviewHistory> ReviewHistories => Set<ReviewHistory>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -30,9 +32,18 @@ namespace Reading_Writing_Platform.Data
                 entity.HasIndex(x => x.Slug).IsUnique();
                 entity.Property(x => x.RowVersion).IsRowVersion();
 
+                entity.HasIndex(x => x.AuthorUserId);
+                entity.HasIndex(x => x.ReviewedByUserId);
+                entity.HasIndex(x => new { x.Status, x.SubmittedForReviewAt });
+
                 entity.HasOne(x => x.AuthorUser)
                     .WithMany()
                     .HasForeignKey(x => x.AuthorUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.ReviewedByUser)
+                    .WithMany()
+                    .HasForeignKey(x => x.ReviewedByUserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -40,6 +51,7 @@ namespace Reading_Writing_Platform.Data
             {
                 entity.HasIndex(x => new { x.NovelId, x.ChapterNumber }).IsUnique();
                 entity.HasIndex(x => new { x.NovelId, x.Order }).IsUnique();
+                entity.HasIndex(x => new { x.NovelId, x.Status, x.PublishedAt });
 
                 entity.Property(x => x.BasePrice).HasPrecision(10, 2);
                 entity.Property(x => x.RowVersion).IsRowVersion();
@@ -79,6 +91,43 @@ namespace Reading_Writing_Platform.Data
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<ReadingProgress>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.HasIndex(x => x.UserId);
+                entity.HasIndex(x => new { x.UserId, x.NovelId }).IsUnique();
+
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Novel)
+                    .WithMany(n => n.ReadingProgresses)
+                    .HasForeignKey(x => x.NovelId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<ReviewHistory>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.HasIndex(x => x.NovelId);
+                entity.HasIndex(x => x.PerformedByUserId);
+                entity.HasIndex(x => x.PerformedAt);
+
+                entity.HasOne(x => x.Novel)
+                    .WithMany()
+                    .HasForeignKey(x => x.NovelId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.PerformedByUser)
+                    .WithMany()
+                    .HasForeignKey(x => x.PerformedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

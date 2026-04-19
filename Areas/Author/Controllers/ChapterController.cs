@@ -1,18 +1,24 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
 using Reading_Writing_Platform.Models;
 using Reading_Writing_Platform.Security;
 using Reading_Writing_Platform.ViewModels;
 
-namespace Reading_Writing_Platform.Controllers
+namespace Reading_Writing_Platform.Areas.Author.Controllers
 {
-    [Authorize(Roles = $"{RoleNames.Author},{RoleNames.Admin}")]
+    [Area("Author")]
+    [Authorize(Roles = RoleNames.Member + "," + RoleNames.Admin)]
     [Route("novels/{novelId:guid}/{novelSlug}/chapters")]
     public class ChapterController : Controller
     {
+        private const int DefaultPage = 1;
+        private const int MinPageSize = 5;
+        private const int MaxPageSize = 50;
+
         private readonly ApplicationDbContext _dbContext;
 
         public ChapterController(ApplicationDbContext dbContext)
@@ -20,7 +26,7 @@ namespace Reading_Writing_Platform.Controllers
             _dbContext = dbContext;
         }
 
-        [HttpGet("")]
+        [HttpGet("", Name = "AuthorChapterIndex")]
         public async Task<IActionResult> Index(
             Guid novelId,
             string novelSlug,
@@ -37,21 +43,30 @@ namespace Reading_Writing_Platform.Controllers
 
             if (page < 1)
             {
-                page = 1;
+                page = DefaultPage;
             }
 
-            pageSize = Math.Clamp(pageSize, 5, 50);
+            pageSize = Math.Clamp(pageSize, MinPageSize, MaxPageSize);
 
             IQueryable<Chapter> baseQuery = _dbContext.Chapters
                 .Where(x => x.NovelId == novelId);
 
-            int allCount = await baseQuery.CountAsync();
-            int publishedCount = await baseQuery.CountAsync(x => x.Status == ChapterStatus.Published);
-            int draftCount = await baseQuery.CountAsync(x => x.Status == ChapterStatus.Draft);
-            int scheduledCount = await baseQuery.CountAsync(x =>
-                x.Status == ChapterStatus.Published &&
-                x.PublishedAt.HasValue &&
-                x.PublishedAt > DateTimeOffset.UtcNow);
+            // Single query to get all required counts with conditional aggregation
+            var counts = await baseQuery
+                .GroupBy(x => 1)
+                .Select(g => new
+                {
+                    All = g.Count(),
+                    Published = g.Count(x => x.Status == ChapterStatus.Published),
+                    Draft = g.Count(x => x.Status == ChapterStatus.Draft),
+                    Scheduled = g.Count(x => x.Status == ChapterStatus.Published && x.PublishedAt.HasValue && x.PublishedAt > DateTimeOffset.UtcNow)
+                })
+                .FirstOrDefaultAsync();
+
+            int allCount = counts?.All ?? 0;
+            int publishedCount = counts?.Published ?? 0;
+            int draftCount = counts?.Draft ?? 0;
+            int scheduledCount = counts?.Scheduled ?? 0;
 
             IQueryable<Chapter> query = baseQuery;
 
@@ -120,11 +135,24 @@ namespace Reading_Writing_Platform.Controllers
                 .Select(x => (int?)x.Order)
                 .MaxAsync() ?? 0;
 
+            var allowedStatuses = novel.Status == NovelStatus.Published
+                ? new List<SelectListItem>
+                {
+                    new SelectListItem { Text = ChapterStatus.Draft.ToString(), Value = ((int)ChapterStatus.Draft).ToString() },
+                    new SelectListItem { Text = ChapterStatus.Published.ToString(), Value = ((int)ChapterStatus.Published).ToString() }
+                }
+                : new List<SelectListItem>
+                {
+                    new SelectListItem { Text = ChapterStatus.Draft.ToString(), Value = ((int)ChapterStatus.Draft).ToString() }
+                };
+
             var vm = new ChapterFormViewModel
             {
                 NovelId = novelId,
                 NovelSlug = novel.Slug,
-                Order = nextOrder + 1
+                Order = nextOrder + 1,
+                NovelStatus = novel.Status,
+                AvailableStatuses = allowedStatuses
             };
 
             return View(vm);
@@ -140,10 +168,30 @@ namespace Reading_Writing_Platform.Controllers
                 return NotFound();
             }
 
+            // Prevent modifications to completed novels
+            if (novel.Status == NovelStatus.Completed)
+            {
+                ModelState.AddModelError(string.Empty, "Cannot add chapters to a completed novel.");
+                vm.NovelId = novelId;
+                vm.NovelSlug = novel.Slug;
+                return View(vm);
+            }
+
+            // Chapters can only be published if the novel itself is Published
+            if (vm.Status == ChapterStatus.Published && novel.Status != NovelStatus.Published)
+            {
+                ModelState.AddModelError(nameof(vm.Status), "Chapters can only be published when the novel status is 'Published'.");
+                vm.NovelId = novelId;
+                vm.NovelSlug = novel.Slug;
+                vm.NovelStatus = novel.Status;
+                return View(vm);
+            }
+
             if (!ModelState.IsValid)
             {
                 vm.NovelId = novelId;
                 vm.NovelSlug = novel.Slug;
+                vm.NovelStatus = novel.Status;
                 return View(vm);
             }
 
@@ -153,7 +201,7 @@ namespace Reading_Writing_Platform.Controllers
                 Title = vm.Title.Trim(),
                 Content = vm.Content,
                 Status = vm.Status,
-                IsLocked = vm.IsLocked,
+                IsLocked = vm.Status == ChapterStatus.Published ? vm.IsLocked : false,
                 BasePrice = vm.BasePrice,
                 Order = vm.Order < 1 ? 1 : vm.Order,
                 ChapterNumber = 0,
@@ -167,7 +215,7 @@ namespace Reading_Writing_Platform.Controllers
             await _dbContext.SaveChangesAsync();
             await NormalizeChapterOrderingAsync(novelId);
 
-            return RedirectToAction(nameof(Index), new { novelId, novelSlug = novel.Slug });
+            return RedirectToRoute("AuthorChapterIndex", new { novelId, novelSlug = novel.Slug });
         }
 
         [HttpGet("{id:guid}/edit")]
@@ -187,6 +235,17 @@ namespace Reading_Writing_Platform.Controllers
                 return NotFound();
             }
 
+            var allowedStatuses = novel.Status == NovelStatus.Published
+                ? new List<SelectListItem>
+                {
+                    new SelectListItem { Text = ChapterStatus.Draft.ToString(), Value = ((int)ChapterStatus.Draft).ToString() },
+                    new SelectListItem { Text = ChapterStatus.Published.ToString(), Value = ((int)ChapterStatus.Published).ToString() }
+                }
+                : new List<SelectListItem>
+                {
+                    new SelectListItem { Text = ChapterStatus.Draft.ToString(), Value = ((int)ChapterStatus.Draft).ToString() }
+                };
+
             var vm = new ChapterFormViewModel
             {
                 Id = chapter.Id,
@@ -198,7 +257,9 @@ namespace Reading_Writing_Platform.Controllers
                 IsLocked = chapter.IsLocked,
                 BasePrice = chapter.BasePrice,
                 Order = chapter.Order,
-                RowVersion = chapter.RowVersion
+                RowVersion = chapter.RowVersion,
+                NovelStatus = novel.Status,
+                AvailableStatuses = allowedStatuses
             };
 
             return View(vm);
@@ -212,6 +273,15 @@ namespace Reading_Writing_Platform.Controllers
             if (novel is null)
             {
                 return NotFound();
+            }
+
+            // Prevent modifications to completed novels
+            if (novel.Status == NovelStatus.Completed)
+            {
+                ModelState.AddModelError(string.Empty, "Cannot edit chapters for a completed novel.");
+                vm.NovelId = novelId;
+                vm.NovelSlug = novel.Slug;
+                return View(vm);
             }
 
             if (id != vm.Id)
@@ -234,12 +304,30 @@ namespace Reading_Writing_Platform.Controllers
                 return View(vm);
             }
 
+            // Enforce publishing rule: chapter can only be published if novel is Published
+            if (vm.Status == ChapterStatus.Published && chapter.Status != ChapterStatus.Published && novel.Status != NovelStatus.Published)
+            {
+                ModelState.AddModelError(nameof(vm.Status), "Chapters can only be published when the novel status is 'Published'.");
+                vm.NovelId = novelId;
+                vm.NovelSlug = novel.Slug;
+                vm.NovelStatus = novel.Status;
+                return View(vm);
+            }
+
+            if (!ModelState.IsValid)
+            {
+                vm.NovelId = novelId;
+                vm.NovelSlug = novel.Slug;
+                vm.NovelStatus = novel.Status;
+                return View(vm);
+            }
+
             bool wasPublished = chapter.Status == ChapterStatus.Published;
 
             chapter.Title = vm.Title.Trim();
             chapter.Content = vm.Content;
             chapter.Status = vm.Status;
-            chapter.IsLocked = vm.IsLocked;
+            chapter.IsLocked = vm.Status == ChapterStatus.Published ? vm.IsLocked : false;
             chapter.BasePrice = vm.BasePrice;
             chapter.Order = vm.Order < 1 ? 1 : vm.Order;
             chapter.WordCount = CountWords(vm.Content);
@@ -261,13 +349,59 @@ namespace Reading_Writing_Platform.Controllers
             {
                 await _dbContext.SaveChangesAsync();
                 await NormalizeChapterOrderingAsync(novelId);
-                return RedirectToAction(nameof(Index), new { novelId, novelSlug = novel.Slug });
+                return RedirectToRoute("AuthorChapterIndex", new { novelId, novelSlug = novel.Slug });
             }
             catch (DbUpdateConcurrencyException)
             {
                 ModelState.AddModelError(string.Empty, "This chapter was modified by another user. Reload and try again.");
                 return View(vm);
             }
+        }
+
+        [HttpPost("publish")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Publish(Guid novelId, string novelSlug, Guid id)
+        {
+            var novel = await GetOwnedOrAdminNovelAsync(novelId);
+            if (novel is null)
+            {
+                return NotFound();
+            }
+
+            if (novel.Status != NovelStatus.Published)
+            {
+                TempData["ErrorMessage"] = "Novel must be published before chapters can be published.";
+                return RedirectToRoute("AuthorChapterIndex", new { novelId, novelSlug });
+            }
+
+            var chapter = await _dbContext.Chapters
+                .FirstOrDefaultAsync(x => x.Id == id && x.NovelId == novelId);
+
+            if (chapter is null)
+            {
+                return NotFound();
+            }
+
+            if (chapter.Status == ChapterStatus.Published)
+            {
+                TempData["InfoMessage"] = "Chapter is already published.";
+                return RedirectToRoute("AuthorChapterIndex", new { novelId, novelSlug });
+            }
+
+            chapter.Status = ChapterStatus.Published;
+            chapter.PublishedAt = DateTimeOffset.UtcNow;
+            chapter.UpdatedAt = DateTimeOffset.UtcNow;
+
+            // Set IsLocked if not already set (only applicable for published chapters)
+            if (chapter.IsLocked == false)
+            {
+                chapter.IsLocked = false; // default to unlocked
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Chapter '{chapter.Title}' has been published.";
+            return RedirectToRoute("AuthorChapterIndex", new { novelId, novelSlug });
         }
 
         [HttpGet("{id:guid}/delete")]
@@ -280,6 +414,7 @@ namespace Reading_Writing_Platform.Controllers
             }
 
             var chapter = await _dbContext.Chapters
+                .Include(c => c.Novel)
                 .FirstOrDefaultAsync(x => x.Id == id && x.NovelId == novelId);
 
             if (chapter is null)
@@ -312,20 +447,18 @@ namespace Reading_Writing_Platform.Controllers
             await _dbContext.SaveChangesAsync();
             await NormalizeChapterOrderingAsync(novelId);
 
-            return RedirectToAction(nameof(Index), new { novelId, novelSlug = novel.Slug });
+            return RedirectToRoute("AuthorChapterIndex", new { novelId, novelSlug = novel.Slug });
         }
 
         private async Task<Novel?> GetOwnedOrAdminNovelAsync(Guid novelId)
         {
-            if (User.IsInRole(RoleNames.Admin))
+            IQueryable<Novel> query = _dbContext.Novels;
+            if (!User.IsInRole(RoleNames.Admin))
             {
-                return await _dbContext.Novels.FirstOrDefaultAsync(x => x.Id == novelId);
+                string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                query = query.Where(x => x.AuthorUserId == userId);
             }
-
-            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            return await _dbContext.Novels
-                .FirstOrDefaultAsync(x => x.Id == novelId && x.AuthorUserId == userId);
+            return await query.FirstOrDefaultAsync(x => x.Id == novelId);
         }
 
         private async Task NormalizeChapterOrderingAsync(Guid novelId)

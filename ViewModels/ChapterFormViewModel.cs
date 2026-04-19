@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Reading_Writing_Platform.Models;
 
 namespace Reading_Writing_Platform.ViewModels
@@ -26,5 +27,9 @@ namespace Reading_Writing_Platform.ViewModels
         public int Order { get; set; } = 1;
 
         public byte[]? RowVersion { get; set; }
+
+        public NovelStatus NovelStatus { get; set; } = NovelStatus.Draft;
+
+        public IEnumerable<SelectListItem> AvailableStatuses { get; set; } = new List<SelectListItem>();
     }
 }

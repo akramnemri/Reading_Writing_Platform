@@ -2,6 +2,7 @@
 @{
     string? currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     string? currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    string? currentArea = ViewContext.RouteData.Values["area"]?.ToString();
 
     bool isAuthorOrAdmin = User.IsInRole(RoleNames.Author) || User.IsInRole(RoleNames.Admin);
 }
@@ -33,38 +34,54 @@
                     Reading_Writing_Platform
                 </a>
 
-                <div class="flex items-center gap-2">
-                    <a asp-area=""
-                       asp-controller="Home"
-                       asp-action="Index"
-                       class="@(currentController == "Home" && currentAction == "Index" ? "nav-pill nav-pill-active" : "nav-pill")">
-                        Home
-                    </a>
+                 <div class="flex items-center gap-2">
+                     <a asp-area=""
+                        asp-controller="Home"
+                        asp-action="Index"
+                        class="@(currentController == "Home" && currentAction == "Index" ? "nav-pill nav-pill-active" : "nav-pill")">
+                         Home
+                     </a>
 
-                    <a asp-area=""
-                       asp-controller="Home"
-                       asp-action="Privacy"
-                       class="@(currentController == "Home" && currentAction == "Privacy" ? "nav-pill nav-pill-active" : "nav-pill")">
-                        Privacy
-                    </a>
+                     <a asp-area=""
+                        asp-controller="Home"
+                        asp-action="Privacy"
+                        class="@(currentController == "Home" && currentAction == "Privacy" ? "nav-pill nav-pill-active" : "nav-pill")">
+                         Privacy
+                     </a>
 
-                    @if (isAuthorOrAdmin)
-                    {
-                        <a asp-area=""
-                           asp-controller="Novel"
-                           asp-action="Index"
-                           class="@(currentController == "Novel" ? "nav-pill nav-pill-active" : "nav-pill")">
-                            My Novels
-                        </a>
+                     @if (User.Identity?.IsAuthenticated == true)
+                     {
+                          @if (User.IsInRole(RoleNames.Author))
+                          {
+                              <a asp-area="Author"
+                                 asp-controller="Novel"
+                                 asp-action="Index"
+                                 class="@(currentController == "Novel" && currentArea == "Author" ? "nav-pill nav-pill-active" : "nav-pill")">
+                                  My Novels
+                              </a>
+                          }
 
-                        <a asp-area=""
-                           asp-controller="Novel"
-                           asp-action="Index"
-                           class="@(currentController == "Chapter" ? "nav-pill nav-pill-active" : "nav-pill")">
-                            Chapters
-                        </a>
-                    }
-                </div>
+                         @if (User.IsInRole(RoleNames.Admin))
+                         {
+                             <a asp-area="Admin"
+                                asp-controller="Review"
+                                asp-action="Index"
+                                class="@(currentController == "Review" && currentArea == "Admin" ? "nav-pill nav-pill-active" : "nav-pill")">
+                                 Review Queue
+                             </a>
+                         }
+
+                           @if (User.IsInRole(RoleNames.Member) && !(User.IsInRole(RoleNames.Author)))
+                           {
+                               <a asp-area="Author"
+                                  asp-controller="Novel"
+                                  asp-action="Index"
+                                  class="nav-pill">
+                                   Write
+                               </a>
+                           }
+                     }
+                 </div>
 
                 <partial name="_LoginPartial" />
             </div>
@@ -86,16 +103,6 @@
     </footer>
 
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script>
-        window.addEventListener("scroll", () => {
-            const max = document.documentElement.scrollHeight - window.innerHeight;
-            const ratio = max > 0 ? (window.scrollY / max) : 0;
-            const progress = document.getElementById("scroll-progress");
-            if (progress) {
-                progress.style.transform = `scaleX(${Math.min(Math.max(ratio, 0), 1)})`;
-            }
-        });
-    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

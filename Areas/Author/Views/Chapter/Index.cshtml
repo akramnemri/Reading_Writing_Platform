@@ -20,9 +20,9 @@
 <div class="space-y-6">
     <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
         <a asp-controller="Novel" asp-action="Index" class="hover:text-ink-blue">My Novels</a>
-        <span>›</span>
+        <span>ï¿½</span>
         <a asp-controller="Novel" asp-action="Details" asp-route-id="@novel.Id" class="hover:text-ink-blue">@novel.Title</a>
-        <span>›</span>
+        <span>ï¿½</span>
         <span class="text-ink-blue font-medium">Chapters</span>
     </nav>
 
@@ -42,19 +42,43 @@
 
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink-blue/10 pb-3">
         <div class="flex flex-wrap items-center gap-2 text-sm">
-            <a asp-action="Index" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" asp-route-status="all" asp-route-q="@query" asp-route-page="1" asp-route-pageSize="@pageSize"
+            <a asp-route="AuthorChapterIndex"
+               asp-route-novelId="@novel.Id"
+               asp-route-novelSlug="@novel.Slug"
+               asp-route-status="all"
+               asp-route-q="@query"
+               asp-route-page="1"
+               asp-route-pageSize="@pageSize"
                class="@(activeStatus == "all" ? "nav-pill nav-pill-active" : "nav-pill")">
                 All (@allCount)
             </a>
-            <a asp-action="Index" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" asp-route-status="published" asp-route-q="@query" asp-route-page="1" asp-route-pageSize="@pageSize"
+            <a asp-route="AuthorChapterIndex"
+               asp-route-novelId="@novel.Id"
+               asp-route-novelSlug="@novel.Slug"
+               asp-route-status="published"
+               asp-route-q="@query"
+               asp-route-page="1"
+               asp-route-pageSize="@pageSize"
                class="@(activeStatus == "published" ? "nav-pill nav-pill-active" : "nav-pill")">
                 Published (@publishedCount)
             </a>
-            <a asp-action="Index" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" asp-route-status="scheduled" asp-route-q="@query" asp-route-page="1" asp-route-pageSize="@pageSize"
+            <a asp-route="AuthorChapterIndex"
+               asp-route-novelId="@novel.Id"
+               asp-route-novelSlug="@novel.Slug"
+               asp-route-status="scheduled"
+               asp-route-q="@query"
+               asp-route-page="1"
+               asp-route-pageSize="@pageSize"
                class="@(activeStatus == "scheduled" ? "nav-pill nav-pill-active" : "nav-pill")">
                 Scheduled (@scheduledCount)
             </a>
-            <a asp-action="Index" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" asp-route-status="draft" asp-route-q="@query" asp-route-page="1" asp-route-pageSize="@pageSize"
+            <a asp-route="AuthorChapterIndex"
+               asp-route-novelId="@novel.Id"
+               asp-route-novelSlug="@novel.Slug"
+               asp-route-status="draft"
+               asp-route-q="@query"
+               asp-route-page="1"
+               asp-route-pageSize="@pageSize"
                class="@(activeStatus == "draft" ? "nav-pill nav-pill-active" : "nav-pill")">
                 Drafts (@draftCount)
             </a>
@@ -145,7 +169,7 @@
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <a asp-action="Index"
+        <a asp-route="AuthorChapterIndex"
            asp-route-novelId="@novel.Id"
            asp-route-novelSlug="@novel.Slug"
            asp-route-status="@activeStatus"
@@ -159,7 +183,7 @@
         <div class="flex flex-wrap items-center gap-1 text-sm">
             @for (int p = 1; p <= totalPages; p++)
             {
-                <a asp-action="Index"
+                <a asp-route="AuthorChapterIndex"
                    asp-route-novelId="@novel.Id"
                    asp-route-novelSlug="@novel.Slug"
                    asp-route-status="@activeStatus"
@@ -172,7 +196,7 @@
             }
         </div>
 
-        <a asp-action="Index"
+        <a asp-route="AuthorChapterIndex"
            asp-route-novelId="@novel.Id"
            asp-route-novelSlug="@novel.Slug"
            asp-route-status="@activeStatus"
@@ -183,4 +207,5 @@
             Next
         </a>
     </div>
+</div>
 </div>

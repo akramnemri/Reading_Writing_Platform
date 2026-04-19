@@ -1,0 +1,30 @@
+@model Reading_Writing_Platform.Models.Chapter
+
+@{
+    ViewData["Title"] = $"Delete Chapter {Model.ChapterNumber}";
+}
+
+<div class="space-y-6 max-w-2xl mx-auto">
+    <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
+        <a asp-controller="Novel" asp-action="Index" class="hover:text-ink-blue">My Novels</a>
+        <span>›</span>
+        <a asp-controller="Novel" asp-action="Details" asp-route-id="@Model.NovelId" class="hover:text-ink-blue">Novel</a>
+        <span>›</span>
+        <span class="text-ink-blue font-medium">Delete Chapter</span>
+    </nav>
+
+    <div class="rounded-[var(--radius-outer)] border border-red-200 bg-red-50 p-6">
+        <h1 class="text-2xl font-display text-red-800">Delete Chapter</h1>
+        <p class="mt-2 text-sm text-ink-blue/80">
+            Are you sure you want to delete chapter <strong>@Model.Title</strong>? This action cannot be undone.
+        </p>
+
+        <form method="post" asp-action="DeleteConfirmed" asp-route-novelId="@Model.NovelId" asp-route-novelSlug="@Model.Novel!.Slug" asp-route-id="@Model.Id" class="mt-6">
+            @Html.AntiForgeryToken()
+            <div class="flex gap-2">
+                <button type="submit" class="btn-danger">Delete</button>
+                <a asp-action="Index" asp-route-novelId="@Model.NovelId" asp-route-novelSlug="@Model.Novel!.Slug" class="btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

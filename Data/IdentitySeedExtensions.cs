@@ -50,15 +50,17 @@ namespace Reading_Writing_Platform.Data
                     }
                 }
 
-                if (!await userManager.IsInRoleAsync(adminUser, RoleNames.Admin))
+            if (!await userManager.IsInRoleAsync(adminUser, RoleNames.Admin))
+            {
+                var addToRoleResult = await userManager.AddToRoleAsync(adminUser, RoleNames.Admin);
+                if (!addToRoleResult.Succeeded)
                 {
-                    var addToRoleResult = await userManager.AddToRoleAsync(adminUser, RoleNames.Admin);
-                    if (!addToRoleResult.Succeeded)
-                    {
-                        var errors = string.Join("; ", addToRoleResult.Errors.Select(e => e.Description));
-                        throw new InvalidOperationException($"Unable to assign Admin role: {errors}");
-                    }
+                    var errors = string.Join("; ", addToRoleResult.Errors.Select(e => e.Description));
+                    throw new InvalidOperationException($"Unable to assign Admin role: {errors}");
                 }
+            }
+
+            // Do NOT assign Member role to admin; admin is separate. If admin needs member privileges (e.g., commenting), assign manually.
             }
 
             // Backfill: any user without role becomes Member

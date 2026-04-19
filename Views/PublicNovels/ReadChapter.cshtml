@@ -9,6 +9,19 @@
 
 <div class="space-y-6 max-w-3xl mx-auto">
 
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+    {
+        <div class="flex gap-2">
+            <a asp-area="Admin" asp-action="Details" asp-controller="Review" asp-route-id="@novel.Id"
+               class="btn btn-sm btn-outline-warning">
+                ← Back to Review Draft
+            </a>
+            <a asp-area="Admin" asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                Review Queue
+            </a>
+        </div>
+    }
+
     <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
         <a href="/" class="hover:text-ink-blue">Home</a>
         <span>›</span>

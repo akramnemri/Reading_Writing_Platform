@@ -1,12 +1,14 @@
-@model IReadOnlyList<Reading_Writing_Platform.Models.Novel>
+@model IReadOnlyList<Reading_Writing_Platform.ViewModels.NovelListItemViewModel>
 
 @{
     ViewData["Title"] = "My Novels";
 
-    int totalNovels = Model.Count;
-    int publishedCount = Model.Count(x => x.Status == Reading_Writing_Platform.Models.NovelStatus.Published);
-    int draftCount = Model.Count(x => x.Status == Reading_Writing_Platform.Models.NovelStatus.Draft);
-    int totalChapters = Model.Sum(x => x.Chapters.Count);
+    // Use ViewBag counts for totals (unfiltered)
+    int totalNovels = ViewBag.TotalNovels != null ? (int)ViewBag.TotalNovels : Model.Count;
+    int publishedCount = ViewBag.PublishedCount != null ? (int)ViewBag.PublishedCount : Model.Count(x => x.Status == Reading_Writing_Platform.Models.NovelStatus.Published);
+    int draftCount = ViewBag.DraftCount != null ? (int)ViewBag.DraftCount : Model.Count(x => x.Status == Reading_Writing_Platform.Models.NovelStatus.Draft);
+    int totalChapters = Model.Sum(x => x.ChapterCount);
+    string? currentStatus = ViewBag.CurrentStatus as string;
 }
 
 <div class="space-y-8">
@@ -44,9 +46,9 @@
 
     <div class="border-b border-ink-blue/10 pb-2">
         <div class="flex flex-wrap items-center gap-2 text-sm">
-            <span class="nav-pill nav-pill-active">All Novels (@totalNovels)</span>
-            <span class="nav-pill">Published (@publishedCount)</span>
-            <span class="nav-pill">Drafts (@draftCount)</span>
+            <a asp-action="Index" asp-route-status="" class="nav-pill @(string.IsNullOrEmpty(currentStatus) ? "nav-pill-active" : "")">All Novels (@totalNovels)</a>
+            <a asp-action="Index" asp-route-status="Published" class="nav-pill @(currentStatus == "Published" ? "nav-pill-active" : "")">Published (@publishedCount)</a>
+            <a asp-action="Index" asp-route-status="Draft" class="nav-pill @(currentStatus == "Draft" ? "nav-pill-active" : "")">Drafts (@draftCount)</a>
         </div>
     </div>
 
@@ -91,7 +93,14 @@
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="text-2xl font-display text-deep-navy">@novel.Title</h2>
-                                <span class="rounded-full px-2.5 py-1 text-xs font-medium @badgeClass">@novel.Status</span>
+                                @{
+                                    string statusText = novel.Status.ToString();
+                                    if (novel.Status == Reading_Writing_Platform.Models.NovelStatus.Submitted && novel.SubmissionCount > 0)
+                                    {
+                                        statusText = $"Submitted ({novel.SubmissionCount})";
+                                    }
+                                }
+                                <span class="rounded-full px-2.5 py-1 text-xs font-medium @badgeClass">@statusText</span>
                             </div>
 
                             <p class="mt-2 text-sm text-ink-blue/75 line-clamp-2">
@@ -99,7 +108,7 @@
                             </p>
 
                             <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-blue/70">
-                                <span>@novel.Chapters.Count chapter(s)</span>
+                                <span>@novel.ChapterCount chapter(s)</span>
                                 <span>Slug: @novel.Slug</span>
                                 <span>Updated @novel.UpdatedAt.ToLocalTime().ToString("g")</span>
                             </div>
@@ -107,14 +116,38 @@
                             <div class="mt-4 flex flex-wrap gap-2">
                                 <a asp-action="Details" asp-route-id="@novel.Id" class="btn-ghost py-2 px-4">Details</a>
                                 <a asp-action="Edit" asp-route-id="@novel.Id" class="btn-primary py-2 px-4">Edit</a>
-                                <a asp-controller="Chapter"
-                                   asp-action="Index"
+                                <a asp-route="AuthorChapterIndex"
                                    asp-route-novelId="@novel.Id"
                                    asp-route-novelSlug="@novel.Slug"
                                    class="btn-gold py-2 px-4">
                                     Chapters
                                 </a>
                                 <a asp-action="Delete" asp-route-id="@novel.Id" class="btn-ghost py-2 px-4">Delete</a>
+
+                                @if (novel.LastReadChapterNumber.HasValue)
+                                {
+                                    <a asp-area="" asp-controller="PublicNovels" asp-action="ReadChapter"
+                                       asp-route-slug="@novel.Slug"
+                                       asp-route-chapterNumber="@novel.LastReadChapterNumber.Value"
+                                       class="btn-primary py-2 px-4">
+                                        Continue Reading (Ch. @novel.LastReadChapterNumber)
+                                    </a>
+                                }
+
+                                @if (novel.Status == NovelStatus.Draft || novel.Status == NovelStatus.Rejected)
+                                {
+                                    <form method="post" asp-action="SubmitForReview" asp-route-id="@novel.Id" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-gold py-2 px-4" onclick="return confirm('Submit this novel for review?')">Submit for Review</button>
+                                    </form>
+                                }
+                                else if (novel.Status == NovelStatus.Approved)
+                                {
+                                    <form method="post" asp-action="Publish" asp-route-id="@novel.Id" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-primary py-2 px-4" onclick="return confirm('Publish this novel? It will become visible to readers.')">Publish</button>
+                                    </form>
+                                }
                             </div>
                         </div>
                     </div>

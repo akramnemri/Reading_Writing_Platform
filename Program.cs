@@ -87,17 +87,17 @@ app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    context.Response.Headers["Content-Security-Policy"] =
-        "default-src 'self'; " +
-        "base-uri 'self'; " +
-        "object-src 'none'; " +
-        "frame-ancestors 'none'; " +
-        "form-action 'self'; " +
-        "img-src 'self' data:; " +
-        "font-src 'self' https://fonts.gstatic.com; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "script-src 'self' 'unsafe-inline'; " +
-        "connect-src 'self';";
+        context.Response.Headers["Content-Security-Policy"] =
+            "default-src 'self'; " +
+            "base-uri 'self'; " +
+            "object-src 'none'; " +
+            "frame-ancestors 'none'; " +
+            "form-action 'self'; " +
+            "img-src 'self' data:; " +
+            "font-src 'self' https://fonts.gstatic.com; " +
+            "style-src 'self' https://fonts.googleapis.com; " +
+            "script-src 'self'; " +
+            "connect-src 'self';";
     await next();
 });
 
@@ -122,9 +122,22 @@ app.MapControllerRoute(
     defaults: new { controller = "PublicNovels", action = "Details" }
 );
 
+
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
 app.MapRazorPages();
+
+// Seed sample novels in Development
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    await NovelSeeder.SeedAsync(scope.ServiceProvider);
+}
 
 app.Run();

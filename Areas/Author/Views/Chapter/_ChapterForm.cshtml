@@ -23,7 +23,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
             <label asp-for="Status" class="block mb-1 text-sm font-medium"></label>
-            <select asp-for="Status" asp-items="Html.GetEnumSelectList<Reading_Writing_Platform.Models.ChapterStatus>()" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></select>
+            @if (Model.AvailableStatuses?.Any() == true)
+            {
+                <select asp-for="Status" asp-items="Model.AvailableStatuses" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></select>
+            }
+            else
+            {
+                <select asp-for="Status" asp-items="Html.GetEnumSelectList<Reading_Writing_Platform.Models.ChapterStatus>()" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white"></select>
+            }
+            <span asp-validation-for="Status" class="text-red-600 text-sm"></span>
         </div>
         <div>
             <label asp-for="Order" class="block mb-1 text-sm font-medium"></label>
@@ -37,15 +45,46 @@
         </div>
     </div>
 
-    <label class="flex items-center gap-2 text-sm">
-        <input asp-for="IsLocked" />
-        <span>Is locked</span>
-    </label>
+    @* Show IsLocked only if chapter is (or will be) Published *@
+    @if (Model.Status == ChapterStatus.Published || Model.NovelStatus == NovelStatus.Published)
+    {
+        <label class="flex items-center gap-2 text-sm">
+            <input asp-for="IsLocked" />
+            <span>Is locked</span>
+        </label>
+    }
 
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         <button type="submit" class="btn-gold">Save</button>
+
+        @if (Model.NovelStatus == NovelStatus.Published && Model.Status == ChapterStatus.Draft)
+        {
+            <button type="button" id="publishBtn" class="btn-primary"
+                    onclick="publishChapter()">Publish</button>
+        }
+
         <a asp-action="Index" asp-route-novelId="@Model.NovelId" asp-route-novelSlug="@Model.NovelSlug" class="btn-ghost">Cancel</a>
     </div>
+
+    @if (Model.NovelStatus == NovelStatus.Published && Model.Status == ChapterStatus.Draft)
+    {
+        <form id="publishForm" method="post"
+              asp-action="Publish"
+              asp-route-novelId="@Model.NovelId"
+              asp-route-novelSlug="@Model.NovelSlug"
+              asp-route-id="@Model.Id"
+              style="display:inline;">
+            @Html.AntiForgeryToken()
+        </form>
+
+        <script>
+            function publishChapter() {
+                if (confirm("Publish this chapter? It will become visible to all readers.")) {
+                    document.getElementById('publishForm').submit();
+                }
+            }
+        </script>
+    }
 </form>
 
 @section Scripts {

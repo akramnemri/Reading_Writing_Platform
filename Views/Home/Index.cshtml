@@ -1,8 +1,75 @@
-﻿@{
+﻿@model Reading_Writing_Platform.ViewModels.HomeIndexViewModel
+@using Reading_Writing_Platform.Security
+@{
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="space-y-8">
+    <section class="text-center">
+        <h1 class="text-5xl font-display text-deep-navy mb-4">Welcome to Reading_Writing_Platform</h1>
+        <p class="text-lg text-ink-blue/70 max-w-2xl mx-auto">
+            Discover stories, share your voice, and connect with fellow readers and writers.
+        </p>
+        @if (User.Identity?.IsAuthenticated != true)
+        {
+            <div class="mt-6 flex justify-center gap-4">
+                <a asp-area="Identity" asp-page="/Account/Register" class="btn-gold py-3 px-6">Join Now</a>
+                <a asp-area="Identity" asp-page="/Account/Login" class="btn-primary py-3 px-6">Sign In</a>
+            </div>
+        }
+        else if (User.IsInRole(RoleNames.Member) && !User.IsInRole(RoleNames.Author))
+        {
+            <div class="mt-6">
+                <a asp-area="Author" asp-controller="Novel" asp-action="Create" class="btn-gold py-3 px-6">Start Writing</a>
+            </div>
+        }
+    </section>
+
+    <section>
+        <h2 class="text-3xl font-display text-deep-navy mb-4">📚 Featured Novels</h2>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @foreach (var novel in Model.PublishedNovels)
+            {
+                <article class="card-book h-full flex flex-col">
+                    <div class="h-48 w-full overflow-hidden rounded-[var(--radius-inner)] bg-paper-grey">
+                        @if (!string.IsNullOrWhiteSpace(novel.CoverImageUrl))
+                        {
+                            <img src="@novel.CoverImageUrl" alt="@novel.Title cover" class="h-full w-full object-cover" />
+                        }
+                        else
+                        {
+                            <div class="flex h-full w-full items-center justify-center text-sm text-ink-blue/60">
+                                No cover
+                            </div>
+                        }
+                    </div>
+                     <div class="flex-1 flex flex-col p-4">
+                         <h3 class="text-xl font-display text-deep-navy">@novel.Title</h3>
+                         <p class="mt-2 text-sm text-ink-blue/75 line-clamp-2">
+                             @(string.IsNullOrWhiteSpace(novel.Description) ? "No description." : novel.Description)
+                         </p>
+                         <div class="mt-auto pt-4">
+                             @if (novel.LastReadChapterNumber.HasValue)
+                             {
+                                 <a asp-area="" asp-controller="PublicNovels" asp-action="ReadChapter"
+                                    asp-route-slug="@novel.Slug"
+                                    asp-route-chapterNumber="@novel.LastReadChapterNumber.Value"
+                                    class="btn-primary py-2 px-4 w-full text-center">
+                                     Continue Reading (Ch. @novel.LastReadChapterNumber)
+                                 </a>
+                             }
+                             else
+                             {
+                                 <a asp-area="" asp-controller="PublicNovels" asp-action="Details"
+                                    asp-route-slug="@novel.Slug"
+                                    class="btn-ghost py-2 px-4 w-full text-center">
+                                     Read Now
+                                 </a>
+                             }
+                         </div>
+                     </div>
+                </article>
+            }
+        </div>
+    </section>
 </div>

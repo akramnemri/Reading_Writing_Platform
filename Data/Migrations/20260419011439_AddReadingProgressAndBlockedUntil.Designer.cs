@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Reading_Writing_Platform.Data;
 
@@ -11,9 +12,11 @@ using Reading_Writing_Platform.Data;
 namespace Reading_Writing_Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260419011439_AddReadingProgressAndBlockedUntil")]
+    partial class AddReadingProgressAndBlockedUntil
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -323,13 +326,6 @@ namespace Reading_Writing_Platform.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<DateTimeOffset?>("ReviewedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("ReviewedByUserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -362,8 +358,6 @@ namespace Reading_Writing_Platform.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorUserId");
-
-                    b.HasIndex("ReviewedByUserId");
 
                     b.HasIndex("Slug")
                         .IsUnique();
@@ -425,44 +419,6 @@ namespace Reading_Writing_Platform.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("ReadingProgresses");
-                });
-
-            modelBuilder.Entity("Reading_Writing_Platform.Models.ReviewHistory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<Guid>("NovelId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("PerformedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("PerformedByUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NovelId");
-
-                    b.HasIndex("PerformedAt");
-
-                    b.HasIndex("PerformedByUserId");
-
-                    b.ToTable("ReviewHistories");
                 });
 
             modelBuilder.Entity("Reading_Writing_Platform.Models.Theme", b =>
@@ -602,14 +558,7 @@ namespace Reading_Writing_Platform.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "ReviewedByUser")
-                        .WithMany()
-                        .HasForeignKey("ReviewedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("AuthorUser");
-
-                    b.Navigation("ReviewedByUser");
                 });
 
             modelBuilder.Entity("Reading_Writing_Platform.Models.NovelTheme", b =>
@@ -634,7 +583,7 @@ namespace Reading_Writing_Platform.Data.Migrations
             modelBuilder.Entity("Reading_Writing_Platform.Models.ReadingProgress", b =>
                 {
                     b.HasOne("Reading_Writing_Platform.Models.Novel", "Novel")
-                        .WithMany("ReadingProgresses")
+                        .WithMany()
                         .HasForeignKey("NovelId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -648,25 +597,6 @@ namespace Reading_Writing_Platform.Data.Migrations
                     b.Navigation("Novel");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Reading_Writing_Platform.Models.ReviewHistory", b =>
-                {
-                    b.HasOne("Reading_Writing_Platform.Models.Novel", "Novel")
-                        .WithMany()
-                        .HasForeignKey("NovelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "PerformedByUser")
-                        .WithMany()
-                        .HasForeignKey("PerformedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Novel");
-
-                    b.Navigation("PerformedByUser");
                 });
 
             modelBuilder.Entity("Reading_Writing_Platform.Models.UserProfile", b =>
@@ -685,8 +615,6 @@ namespace Reading_Writing_Platform.Data.Migrations
                     b.Navigation("Chapters");
 
                     b.Navigation("NovelThemes");
-
-                    b.Navigation("ReadingProgresses");
                 });
 
             modelBuilder.Entity("Reading_Writing_Platform.Models.Theme", b =>

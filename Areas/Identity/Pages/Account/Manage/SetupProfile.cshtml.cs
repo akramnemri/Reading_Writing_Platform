@@ -44,6 +44,7 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
 
             [MaxLength(500)]
             [Display(Name = "Avatar URL")]
+            [Url(ErrorMessage = "Please enter a valid URL.")]
             public string? AvatarUrl { get; set; }
 
             [Display(Name = "What brings you here?")]

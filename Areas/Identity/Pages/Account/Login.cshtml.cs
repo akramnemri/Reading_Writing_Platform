@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
+using Reading_Writing_Platform.Security;
 
 namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
 {
@@ -91,11 +93,16 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
                 var user = await _userManager.FindByEmailAsync(Input.Email);
                 if (user is not null)
                 {
-                    bool hasProfile = await _dbContext.UserProfiles.AnyAsync(x => x.UserId == user.Id);
-                    if (!hasProfile)
+                    // Admins can skip profile setup
+                    bool isAdmin = await _userManager.IsInRoleAsync(user, RoleNames.Admin);
+                    if (!isAdmin)
                     {
-                        _logger.LogInformation("User {UserId} redirected to setup profile.", user.Id);
-                        return RedirectToPage("/Account/Manage/SetupProfile", new { area = "Identity", returnUrl });
+                        bool hasProfile = await _dbContext.UserProfiles.AnyAsync(x => x.UserId == user.Id);
+                        if (!hasProfile)
+                        {
+                            _logger.LogInformation("User {UserId} redirected to setup profile.", user.Id);
+                            return RedirectToPage("/Account/Manage/SetupProfile", new { area = "Identity", returnUrl });
+                        }
                     }
                 }
 
