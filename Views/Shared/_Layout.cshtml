@@ -3,107 +3,634 @@
     string? currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     string? currentAction = ViewContext.RouteData.Values["action"]?.ToString();
     string? currentArea = ViewContext.RouteData.Values["area"]?.ToString();
-
-    bool isAuthorOrAdmin = User.IsInRole(RoleNames.Author) || User.IsInRole(RoleNames.Admin);
+    
+    bool isAuthenticated = User.Identity?.IsAuthenticated == true;
+    bool isAuthor = User.IsInRole(RoleNames.Author);
+    bool isAdmin = User.IsInRole(RoleNames.Admin);
+    bool isMember = User.IsInRole(RoleNames.Member);
 }
 
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth h-full">
+<html lang="en" data-theme="@(Context.Request.Cookies["theme"] ?? "light")">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Reading_Writing_Platform</title>
+    <title>@ViewData["Title"] - NovelWorld</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=Lora:wght@400;500;600&family=Newsreader:wght@400;500;600;700&family=Public+Sans:wght@400;500;600&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap"
           rel="stylesheet" />
 
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Reading_Writing_Platform.styles.css" asp-append-version="true" />
+
+        <style>
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+        html {
+            min-height: 100vh;
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Open Sans', 'Segoe UI', Inter, Roboto, sans-serif;
+            background: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+            img {
+                max-width: 100%;
+                display: block;
+            }
+
+            a {
+                text-decoration: none;
+                color: inherit;
+            }
+
+        /* Header */
+        .header {
+            position: relative;
+            height: 64px;
+            padding: 0 18%;
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-family: 'Poppins', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-heading);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+
+        .nav-link {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--nav-text);
+            transition: opacity 0.15s ease;
+        }
+
+        .nav-link:hover {
+            opacity: 0.7;
+        }
+
+        .nav-link.series {
+            color: var(--accent);
+        }
+
+        .header-center {
+            flex: 0 1 300px;
+        }
+
+        .search-pill {
+            height: 36px;
+            border-radius: 18px;
+            background: var(--search-bg);
+            border: none;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+        }
+
+        .search-pill input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 14px;
+            color: var(--text-main);
+            width: 100%;
+        }
+
+        .search-pill input::placeholder {
+            color: var(--text-soft);
+        }
+
+        .search-icon {
+            width: 16px;
+            height: 16px;
+            color: var(--text-soft);
+            margin-right: 8px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-icon {
+            width: 36px;
+            height: 36px;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: opacity 0.15s ease;
+            position: relative;
+            background: var(--bg-inset);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .header-icon.stroke svg {
+            fill: none;
+            stroke: currentColor;
+        }
+
+        .header-icon:hover {
+            opacity: 0.8;
+            border-color: var(--accent);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: none;
+        }
+
+        .notification-badge.has-notifications {
+            display: block;
+        }
+
+        /* User Dropdown */
+        .user-dropdown-container {
+            position: relative;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 220px;
+            margin-top: 8px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            padding: 16px;
+            display: none;
+            z-index: 200;
+        }
+
+        .user-dropdown.open {
+            display: block;
+        }
+
+        .user-dropdown::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 16px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid var(--bg-panel);
+        }
+
+        .login-btn {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: filter 0.15s ease;
+        }
+
+        .login-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 12px 0;
+        }
+
+        .mode-toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mode-label {
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .mode-toggle {
+            width: 48px;
+            height: 28px;
+            border-radius: 14px;
+            background: var(--bg-inset);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+            transition: background 0.2s ease;
+        }
+
+        .mode-toggle.dark {
+            background: #4A4A4A;
+        }
+
+        .mode-toggle-thumb {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .mode-toggle.dark .mode-toggle-thumb {
+            transform: translateX(20px);
+        }
+
+        .mode-icon {
+            font-size: 14px;
+        }
+
+        /* Authenticated User Menu */
+        .user-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-inset);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-avatar svg {
+            width: 24px;
+            height: 24px;
+            color: var(--text-soft);
+        }
+
+        .username {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-heading);
+        }
+
+        .menu-item {
+            display: block;
+            width: 100%;
+            padding: 10px 0;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(0,0,0,0.04);
+            border-radius: 6px;
+        }
+
+        .menu-item.logout {
+            margin-top: 8px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding-top: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-left: 24px;
+            padding-right: 24px;
+            width: 100%;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 48px 0;
+        }
+
+        .hero-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 16px;
+        }
+
+        .hero-subtitle {
+            font-size: 16px;
+            color: var(--text-muted);
+        }
+
+        /* Featured */
+        .featured-section {
+            margin-top: 24px;
+        }
+
+        .section-header {
+            font-family: 'Poppins', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 24px;
+        }
+
+        .featured-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .featured-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg-panel);
+        }
+
+        .featured-cover {
+            aspect-ratio: 3 / 4;
+            width: 100%;
+            object-fit: cover;
+        }
+
+        .featured-cover-placeholder {
+            aspect-ratio: 3 / 4;
+            width: 100%;
+            background: var(--bg-inset);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-soft);
+            font-size: 14px;
+        }
+
+        .card-info {
+            padding: 16px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 8px;
+        }
+
+        .card-description {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .card-link {
+            display: inline-block;
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--text-link);
+            font-weight: 500;
+        }
+
+         /* Footer */
+         .footer {
+             padding: 24px;
+             text-align: center;
+             font-size: 14px;
+             color: var(--text-muted);
+             background: var(--bg-footer);
+             border-top: 1px solid var(--border-light);
+             flex-shrink: 0;
+         }
+
+         /* Chapter text formatting */
+         .chapter-text {
+             white-space: pre-wrap;
+             tab-size: 4;
+             -moz-tab-size: 4;
+             -webkit-tab-size: 4;
+         }
+     </style>
 </head>
-<body class="min-h-full flex flex-col bg-cream text-ink-blue font-body antialiased">
-    <header class="sticky top-0 z-50 backdrop-blur-md bg-cream/80 border-b border-ink-blue/10">
-        <div id="scroll-progress"
-             class="h-1 bg-antique-gold origin-left scale-x-0 transition-transform duration-300"></div>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a asp-area="" asp-controller="Home" asp-action="Index" class="logo">
+                NovelWorld
+            </a>
+                <nav class="nav-links" style="gap: 16px;">
+                    <a asp-area="" asp-controller="PublicNovels" asp-action="Index" class="nav-link series" style="font-weight: 600;">
+                        Series
+                    </a>
+                    <a asp-area="" asp-controller="Home" asp-action="Bookmarks" class="nav-link" style="font-weight: 600;">
+                        Bookmarks
+                    </a>
+                    @if (isAuthor || isMember)
+                    {
+                        <a asp-area="Author" asp-controller="Novel" asp-action="Index" class="nav-link" style="font-weight: 600;">
+                            My Novels
+                        </a>
+                    }
+                    @if (isAuthor)
+                    {
+                        <a asp-area="Author" asp-controller="Novel" asp-action="Create" class="nav-link" style="font-weight: 600;">
+                            Write
+                        </a>
+                    }
+                    @if (isAdmin)
+                    {
+                        <a asp-area="Admin" asp-controller="Review" asp-action="Index" class="nav-link" style="font-weight: 600;">
+                            Review Queue
+                        </a>
+                    }
+                </nav>
+        </div>
 
-        <nav class="mx-auto w-full max-w-6xl px-4 py-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <a asp-area="" asp-controller="Home" asp-action="Index"
-                   class="text-xl font-display font-semibold text-deep-navy text-shadow-book">
-                    Reading_Writing_Platform
-                </a>
-
-                 <div class="flex items-center gap-2">
-                     <a asp-area=""
-                        asp-controller="Home"
-                        asp-action="Index"
-                        class="@(currentController == "Home" && currentAction == "Index" ? "nav-pill nav-pill-active" : "nav-pill")">
-                         Home
-                     </a>
-
-                     <a asp-area=""
-                        asp-controller="Home"
-                        asp-action="Privacy"
-                        class="@(currentController == "Home" && currentAction == "Privacy" ? "nav-pill nav-pill-active" : "nav-pill")">
-                         Privacy
-                     </a>
-
-                     @if (User.Identity?.IsAuthenticated == true)
-                     {
-                          @if (User.IsInRole(RoleNames.Author))
-                          {
-                              <a asp-area="Author"
-                                 asp-controller="Novel"
-                                 asp-action="Index"
-                                 class="@(currentController == "Novel" && currentArea == "Author" ? "nav-pill nav-pill-active" : "nav-pill")">
-                                  My Novels
-                              </a>
-                          }
-
-                         @if (User.IsInRole(RoleNames.Admin))
-                         {
-                             <a asp-area="Admin"
-                                asp-controller="Review"
-                                asp-action="Index"
-                                class="@(currentController == "Review" && currentArea == "Admin" ? "nav-pill nav-pill-active" : "nav-pill")">
-                                 Review Queue
-                             </a>
-                         }
-
-                           @if (User.IsInRole(RoleNames.Member) && !(User.IsInRole(RoleNames.Author)))
-                           {
-                               <a asp-area="Author"
-                                  asp-controller="Novel"
-                                  asp-action="Index"
-                                  class="nav-pill">
-                                   Write
-                               </a>
-                           }
-                     }
-                 </div>
-
-                <partial name="_LoginPartial" />
+        <div class="header-center">
+            <div class="search-pill">
+                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" placeholder="Search..." />
             </div>
-        </nav>
+        </div>
+
+        <div class="header-right">
+            <button class="header-icon" aria-label="Premium" onclick="window.location.href='/'">
+                <svg fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                </svg>
+            </button>
+            <a href="/Identity/Account/Manage/Index" class="header-icon stroke" aria-label="Notifications">
+                <span class="notification-badge" id="notificationBadge"></span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+            </a>
+                <div class="user-dropdown-container">
+                <button class="header-icon stroke" id="userIconBtn" aria-label="Profile" onclick="toggleUserDropdown()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    @if (!isAuthenticated)
+                    {
+                        <button class="login-btn" onclick="window.location.href='/Identity/Account/Login'">LOG IN</button>
+                        <div class="dropdown-divider"></div>
+                        <div class="mode-toggle-row">
+                            <span class="mode-label">Mode</span>
+                            <button class="mode-toggle" id="modeToggleLoggedOut" onclick="toggleTheme('modeToggleLoggedOut', 'modeIconLoggedOut')">
+                                <span class="mode-toggle-thumb">
+                                    <span class="mode-icon" id="modeIconLoggedOut">☀</span>
+                                </span>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="user-header">
+                            <div class="user-avatar">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <span class="username">@User.Identity?.Name</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a asp-area="Identity" asp-page="/Account/Manage/Index" class="menu-item" style="text-decoration: none; display: block;">Profile</a>
+                        <a asp-area="Identity" asp-page="/Account/Manage/Index" class="menu-item" style="text-decoration: none; display: block;">Notifications</a>
+                        <a asp-controller="Home" asp-action="MyAudiobooks" class="menu-item" style="text-decoration: none; display: block;">My Audiobooks</a>
+                        <a asp-controller="Home" asp-action="MyEbooks" class="menu-item" style="text-decoration: none; display: block;">My Ebooks</a>
+                        <a asp-area="Identity" asp-page="/Account/Manage/ChangePassword" class="menu-item" style="text-decoration: none; display: block;">Settings</a>
+                        <form method="post" asp-area="Identity" asp-controller="Account" asp-action="Logout">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="menu-item logout">Log out</button>
+                        </form>
+                        <div class="dropdown-divider"></div>
+                        <div class="mode-toggle-row">
+                            <span class="mode-label">Mode</span>
+                            <button class="mode-toggle" id="modeToggleLoggedIn" onclick="toggleTheme('modeToggleLoggedIn', 'modeIconLoggedIn')">
+                                <span class="mode-toggle-thumb">
+                                    <span class="mode-icon" id="modeIconLoggedIn">☀</span>
+                                </span>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
     </header>
 
-    <main role="main" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-        @RenderBody()
-    </main>
+     <main class="main-content">
+         @RenderBody()
+     </main>
 
-    <footer class="border-t border-ink-blue/10 py-6">
-        <div class="mx-auto w-full max-w-6xl px-4 text-sm text-ink-blue/70">
-            &copy; 2026 - Reading_Writing_Platform -
-            <a asp-area="" asp-controller="Home" asp-action="Privacy"
-               class="underline decoration-ink-blue/30 hover:decoration-ink-blue">
-                Privacy
-            </a>
-        </div>
-    </footer>
+         <script>
+            function toggleUserDropdown() {
+                const dropdown = document.getElementById('userDropdown');
+                dropdown.classList.toggle('open');
+            }
 
-    <script src="~/js/site.js" asp-append-version="true"></script>
+            function toggleTheme(toggleId, iconId) {
+                const html = document.documentElement;
+                const current = html.getAttribute('data-theme') || 'light';
+                const newTheme = current === 'light' ? 'dark' : 'light';
+                html.setAttribute('data-theme', newTheme);
 
+                const modeToggle = document.getElementById(toggleId);
+                const modeIcon = document.getElementById(iconId);
+                if (modeToggle && modeIcon) {
+                    if (newTheme === 'dark') {
+                        modeToggle.classList.add('dark');
+                        modeIcon.textContent = '🌙';
+                    } else {
+                        modeToggle.classList.remove('dark');
+                        modeIcon.textContent = '☀';
+                    }
+                }
+
+                fetch('/api/Theme/Set', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ theme: newTheme })
+                }).catch(e => console.error('Failed to save theme preference', e));
+            }
+
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('userDropdown');
+            const btn = document.getElementById('userIconBtn');
+            if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+    </script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

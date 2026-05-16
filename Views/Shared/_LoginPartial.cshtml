@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Identity
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
+@using Reading_Writing_Platform.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
 <ul class="flex items-center gap-2">
 @if (SignInManager.IsSignedIn(User))
@@ -8,10 +9,10 @@
     <li>
         <a asp-area="Identity"
            asp-page="/Account/Manage/Index"
-           title="Manage account"
+           title="Account Dashboard"
            class="nav-pill">
-            @User.Identity?.Name
-        </a>
+             @User.Identity?.Name
+         </a>
     </li>
     <li>
         <form method="post"
