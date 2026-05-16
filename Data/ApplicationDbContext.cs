@@ -19,6 +19,7 @@ namespace Reading_Writing_Platform.Data
         public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
         public DbSet<ReadingProgress> ReadingProgresses => Set<ReadingProgress>();
         public DbSet<ReviewHistory> ReviewHistories => Set<ReviewHistory>();
+        public DbSet<ProfileLike> ProfileLikes => Set<ProfileLike>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -127,6 +128,25 @@ namespace Reading_Writing_Platform.Data
                 entity.HasOne(x => x.PerformedByUser)
                     .WithMany()
                     .HasForeignKey(x => x.PerformedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<ProfileLike>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.HasIndex(x => x.LikerUserId);
+                entity.HasIndex(x => x.LikedUserId);
+                entity.HasIndex(x => new { x.LikerUserId, x.LikedUserId }).IsUnique();
+
+                entity.HasOne(x => x.Liker)
+                    .WithMany(x => x.LikesGiven)
+                    .HasForeignKey(x => x.LikerUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.LikedUser)
+                    .WithMany(x => x.LikedBy)
+                    .HasForeignKey(x => x.LikedUserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }
