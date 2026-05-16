@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
+using Reading_Writing_Platform.Models;
+using Reading_Writing_Platform;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +16,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = true;
     options.User.RequireUniqueEmail = true;
@@ -93,11 +95,11 @@ app.Use(async (context, next) =>
             "object-src 'none'; " +
             "frame-ancestors 'none'; " +
             "form-action 'self'; " +
-            "img-src 'self' data:; " +
+            "img-src 'self' data: https://i.ibb.co; " +
             "font-src 'self' https://fonts.gstatic.com; " +
-            "style-src 'self' https://fonts.googleapis.com; " +
-            "script-src 'self'; " +
-            "connect-src 'self';";
+            "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
+            "script-src 'self' http://localhost 'unsafe-inline'; " +
+            "connect-src 'self' http://localhost ws://localhost;";
     await next();
 });
 

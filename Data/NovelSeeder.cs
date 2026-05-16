@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
 using Reading_Writing_Platform.Models;
 using Reading_Writing_Platform.Security;
+using Reading_Writing_Platform;
 
 namespace Reading_Writing_Platform.Data;
 
@@ -12,7 +13,7 @@ public static class NovelSeeder
     {
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         // Seed themes if empty
         if (!await db.Themes.AnyAsync())
@@ -33,7 +34,7 @@ public static class NovelSeeder
         var author = await userManager.FindByEmailAsync(authorEmail);
         if (author == null)
         {
-            author = new IdentityUser
+            author = new ApplicationUser
             {
                 UserName = authorEmail,
                 Email = authorEmail,

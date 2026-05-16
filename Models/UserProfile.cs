@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
+using Reading_Writing_Platform;
 
 namespace Reading_Writing_Platform.Models
 {
@@ -10,7 +10,7 @@ namespace Reading_Writing_Platform.Models
         [Required]
         public string UserId { get; set; } = string.Empty;
 
-        public IdentityUser? User { get; set; }
+        public ApplicationUser? User { get; set; }
 
         [Required, MaxLength(80)]
         public string DisplayName { get; set; } = string.Empty;

@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
+using Reading_Writing_Platform;
 
 namespace Reading_Writing_Platform.Models
 {
@@ -10,7 +10,7 @@ namespace Reading_Writing_Platform.Models
         [Required]
         public string AuthorUserId { get; set; } = string.Empty;
 
-        public IdentityUser? AuthorUser { get; set; }
+        public ApplicationUser? AuthorUser { get; set; }
 
         [Required, MaxLength(160)]
         public string Title { get; set; } = string.Empty;
@@ -42,7 +42,7 @@ namespace Reading_Writing_Platform.Models
         public DateTimeOffset? ReviewedAt { get; set; }
         [MaxLength(450)]
         public string? ReviewedByUserId { get; set; }
-        public IdentityUser? ReviewedByUser { get; set; }
+        public ApplicationUser? ReviewedByUser { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

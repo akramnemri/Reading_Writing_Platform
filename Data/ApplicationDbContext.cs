@@ -5,7 +5,7 @@ using Reading_Writing_Platform.Models;
 
 namespace Reading_Writing_Platform.Data
 {
-    public class ApplicationDbContext : IdentityDbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)

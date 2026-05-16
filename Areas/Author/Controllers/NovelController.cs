@@ -21,9 +21,9 @@ namespace Reading_Writing_Platform.Areas.Author.Controllers
         private const int MaximumPageSize = 20;
 
         private readonly ApplicationDbContext _dbContext;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public NovelController(ApplicationDbContext dbContext, UserManager<IdentityUser> userManager)
+        public NovelController(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager)
         {
             _dbContext = dbContext;
             _userManager = userManager;

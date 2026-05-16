@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
 using Reading_Writing_Platform.Models;
 using Reading_Writing_Platform.Security;
+using Reading_Writing_Platform.ViewModels;
 namespace Reading_Writing_Platform.Controllers
 {
     [Route("novels")]
@@ -14,6 +15,31 @@ namespace Reading_Writing_Platform.Controllers
         public PublicNovelsController(ApplicationDbContext dbContext)
         {
             _dbContext = dbContext;
+        }
+
+        // GET /novels or /PublicNovels/Index
+        [HttpGet("")]
+        [HttpGet("Index")]
+        public async Task<IActionResult> Index()
+        {
+            var publishedNovels = await _dbContext.Novels
+                .Where(n => n.Status == NovelStatus.Published)
+                .OrderByDescending(n => n.PublishedAt)
+                .Select(n => new NovelListItemViewModel
+                {
+                    Id = n.Id,
+                    Title = n.Title,
+                    Slug = n.Slug,
+                    Description = n.Description,
+                    CoverImageUrl = n.CoverImageUrl,
+                    Status = n.Status,
+                    UpdatedAt = n.UpdatedAt,
+                    ChapterCount = n.Chapters.Count,
+                    LastReadChapterNumber = null
+                })
+                .ToListAsync();
+
+            return View(publishedNovels);
         }
 
         // GET /novels/{slug}

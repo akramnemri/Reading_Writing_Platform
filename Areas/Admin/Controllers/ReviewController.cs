@@ -16,9 +16,9 @@ namespace Reading_Writing_Platform.Areas.Admin.Controllers
     public class ReviewController : Controller
     {
         private readonly ApplicationDbContext _dbContext;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public ReviewController(ApplicationDbContext dbContext, UserManager<IdentityUser> userManager)
+        public ReviewController(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager)
         {
             _dbContext = dbContext;
             _userManager = userManager;

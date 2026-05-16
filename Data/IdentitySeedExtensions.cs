@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Reading_Writing_Platform.Security;
+using Reading_Writing_Platform;
 
 namespace Reading_Writing_Platform.Data
 {
@@ -10,7 +11,7 @@ namespace Reading_Writing_Platform.Data
             using var scope = services.CreateScope();
 
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
             string[] roles = [RoleNames.Author, RoleNames.Member, RoleNames.Admin];
 
@@ -35,7 +36,7 @@ namespace Reading_Writing_Platform.Data
                 var adminUser = await userManager.FindByEmailAsync(adminEmail);
                 if (adminUser is null)
                 {
-                    adminUser = new IdentityUser
+                    adminUser = new ApplicationUser
                     {
                         UserName = adminEmail,
                         Email = adminEmail,

@@ -62,5 +62,39 @@ namespace Reading_Writing_Platform.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+        public IActionResult Bookmarks()
+        {
+            // TODO: Implement bookmarks/library feature
+            // For now, show a placeholder
+            ViewData["Title"] = "My Bookmarks";
+            return View();
+        }
+
+        public IActionResult MyAudiobooks()
+        {
+            ViewData["Title"] = "My Audiobooks";
+            return View();
+        }
+
+        public IActionResult MyEbooks()
+        {
+            ViewData["Title"] = "My Ebooks";
+            return View();
+        }
+
+        public IActionResult Forum()
+        {
+            // TODO: Implement forum feature
+            // For now, show a placeholder
+            ViewData["Title"] = "Community Forum";
+            return View();
+        }
+
+        public IActionResult Resources()
+        {
+            ViewData["Title"] = "Resources";
+            return View();
+        }
     }
 }

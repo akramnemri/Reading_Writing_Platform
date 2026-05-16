@@ -30,4 +30,5 @@ public class ApplicationUser : IdentityUser
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<Report> ReportsMade { get; set; } = new List<Report>();
     public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
+     public string ThemePreference { get; set; } = "light"; // "light" or "dark"
 }
