@@ -1,4 +1,4 @@
-﻿@model Reading_Writing_Platform.Models.Chapter
+@model Reading_Writing_Platform.Models.Chapter
 
 @{
     var novel = ViewBag.Novel as Reading_Writing_Platform.Models.Novel;
@@ -7,94 +7,366 @@
     ViewData["Title"] = $"Chapter {Model.ChapterNumber} — {Model.Title}";
 }
 
-<div class="space-y-6 max-w-3xl mx-auto">
+<!-- Floating Side Navigation -->
+@if (prev.HasValue)
+{
+    <a asp-controller="PublicNovels"
+       asp-action="ReadChapter"
+       asp-route-slug="@novel?.Slug"
+       asp-route-chapterNumber="@prev.Value"
+       class="floating-nav prev"
+       aria-label="Previous Chapter">
+        &lt;
+    </a>
+}
+else
+{
+    <button class="floating-nav prev" disabled aria-label="No Previous Chapter">&lt;</button>
+}
 
-    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
-    {
-        <div class="flex gap-2">
-            <a asp-area="Admin" asp-action="Details" asp-controller="Review" asp-route-id="@novel.Id"
-               class="btn btn-sm btn-outline-warning">
-                ← Back to Review Draft
-            </a>
-            <a asp-area="Admin" asp-action="Index" class="btn btn-sm btn-outline-secondary">
-                Review Queue
-            </a>
-        </div>
-    }
+@if (next.HasValue)
+{
+    <a asp-controller="PublicNovels"
+       asp-action="ReadChapter"
+       asp-route-slug="@novel?.Slug"
+       asp-route-chapterNumber="@next.Value"
+       class="floating-nav next"
+       aria-label="Next Chapter">
+        &gt;
+    </a>
+}
+else
+{
+    <button class="floating-nav next" disabled aria-label="No Next Chapter">&gt;</button>
+}
 
-    <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
-        <a href="/" class="hover:text-ink-blue">Home</a>
-        <span>›</span>
+<!-- Reader Sub-Header (Below Main Header) -->
+<div class="reader-sub-header">
+    <div class="flex items-center gap-3">
         <a asp-controller="PublicNovels"
            asp-action="Details"
            asp-route-slug="@novel?.Slug"
-           class="hover:text-ink-blue">
-            @novel?.Title
+           style="color: var(--text-main);">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
         </a>
-        <span>›</span>
-        <span class="text-ink-blue font-medium">Chapter @Model.ChapterNumber</span>
-    </nav>
+        @if (!string.IsNullOrWhiteSpace(novel?.CoverImageUrl))
+        {
+            <img src="@novel.CoverImageUrl" alt="@novel?.Title" class="h-14 w-10 object-cover rounded" />
+        }
+        <span style="font-size: 14px; font-weight: 500; color: var(--text-main);">@novel?.Title</span>
+    </div>
+</div>
 
-    <section class="rounded-[var(--radius-outer)] border border-ink-blue/10 bg-white p-6 shadow-[0_10px_24px_rgba(26,43,60,0.06)]">
-        <h1 class="text-3xl font-display text-deep-navy">
-            Chapter @Model.ChapterNumber — @Model.Title
-        </h1>
-        <p class="mt-1 text-xs text-ink-blue/50">@Model.WordCount words</p>
-
-        <hr class="my-5 border-ink-blue/10" />
-
-        <div class="prose prose-sm max-w-none text-ink-blue/90 leading-relaxed">
-            @Html.Raw(Model.Content)
+<!-- Chapter List Overlay -->
+<div id="chapterListOverlay" class="fixed inset-0 hidden" style="background-color: rgba(0,0,0,0.5); z-index: 101;">
+    <div class="absolute bottom-0 left-0 right-0 bg-panel border-t shadow-lg max-h-[70vh] overflow-y-auto">
+        <div class="p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-heading">Chapters</h3>
+                <button id="closeChapterList" class="text-soft hover:text-main" type="button">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-1">
+                @if (novel != null && novel.Chapters != null)
+                {
+                    var chapters = novel.Chapters.OrderBy(c => c.ChapterNumber).ToList();
+                    foreach (var chapter in chapters)
+                    {
+                        var isCurrent = chapter.ChapterNumber == Model.ChapterNumber;
+                        var linkClass = isCurrent ? "bg-accent-soft text-accent" : "text-main";
+                        <a asp-controller="PublicNovels"
+                           asp-action="ReadChapter"
+                           asp-route-slug="@novel.Slug"
+                           asp-route-chapterNumber="@chapter.ChapterNumber"
+                           class="flex items-center justify-between p-3 rounded hover:bg-inset transition-colors @linkClass">
+                            <span class="text-sm">Chapter @chapter.ChapterNumber — @chapter.Title</span>
+                            <span class="text-xs text-soft">@chapter.WordCount words</span>
+                        </a>
+                    }
+                }
+            </div>
         </div>
-    </section>
+    </div>
+</div>
 
-    <div class="flex items-center justify-between gap-4">
+@if (novel != null && User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+{
+    <div class="flex gap-2" style="max-width: 800px; margin: 24px auto; padding: 0 24px;">
+        <a asp-area="Admin" asp-action="Details" asp-controller="Review" asp-route-id="@novel.Id"
+           class="btn btn-sm btn-outline-warning">
+            ← Back to Review Draft
+        </a>
+        <a asp-area="Admin" asp-action="Index" class="btn btn-sm btn-outline-secondary">
+            Review Queue
+        </a>
+    </div>
+}
+
+<!-- Chapter Content -->
+<section class="chapter-shell" id="chapterContent">
+    <h1 class="chapter-title">
+        Chapter @Model.ChapterNumber — @Model.Title
+    </h1>
+    <p class="chapter-meta">@Model.WordCount words</p>
+
+    <hr class="my-6 border-ink-blue/10" />
+
+    <div class="chapter-text" id="chapterText">
+        @Html.Raw(Model.Content)
+    </div>
+</section>
+
+<!-- Fixed Bottom Reader Bar -->
+<div class="reader-bottom-bar">
+    <div class="flex items-center gap-3">
+        <button id="chapterListToggle" aria-label="Chapter List" type="button" style="background: transparent; border: none; cursor: pointer;">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #fff;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+        <span style="font-size: 14px; color: #999; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">@novel?.Title — @Model.Title</span>
+    </div>
+    <div class="flex items-center gap-4">
+        <button id="settingsToggle" aria-label="Reader Settings" type="button" style="background: transparent; border: none; cursor: pointer; color: #fff;">
+            <span style="font-size: 18px; font-family: serif; color: #fff;">T</span>
+        </button>
         @if (prev.HasValue)
         {
             <a asp-controller="PublicNovels"
                asp-action="ReadChapter"
                asp-route-slug="@novel?.Slug"
                asp-route-chapterNumber="@prev.Value"
-               class="btn-ghost py-2 px-4">
-                ← Chapter @prev.Value
+               style="font-size: 14px; color: #fff; text-decoration: none; opacity: 0.9;">
+                &lt; Prev
             </a>
         }
-        else
-        {
-            <span></span>
-        }
-
-        <a asp-controller="PublicNovels"
-           asp-action="Details"
-           asp-route-slug="@novel?.Slug"
-           class="text-sm text-ink-blue/60 hover:text-antique-gold transition-colors">
-            Chapter List
-        </a>
-
         @if (next.HasValue)
         {
             <a asp-controller="PublicNovels"
                asp-action="ReadChapter"
                asp-route-slug="@novel?.Slug"
                asp-route-chapterNumber="@next.Value"
-               class="btn-gold py-2 px-4">
-                Chapter @next.Value →
+               style="font-size: 14px; color: #fff; text-decoration: none; opacity: 0.9;">
+                Next &gt;
             </a>
         }
-        else
-        {
-            <span class="text-sm text-ink-blue/40 italic">End of published chapters</span>
-        }
+    </div>
+</div>
+
+<!-- Reader Settings Panel -->
+<div id="readerSettingsPanel" class="reader-settings-panel">
+    <h3>Reader Settings</h3>
+    
+    <div class="setting-group">
+        <span class="setting-label">Font</span>
+        <div class="font-pills" id="fontPills">
+            <button class="font-pill active" data-font="Open Sans">Open Sans</button>
+            <button class="font-pill" data-font="Source Serif">Source Serif</button>
+            <button class="font-pill" data-font="Inter">Inter</button>
+            <button class="font-pill" data-font="Merriweather">Merriweather</button>
+            <button class="font-pill" data-font="Lato">Lato</button>
+            <button class="font-pill" data-font="Montserrat">Montserrat</button>
+        </div>
+    </div>
+
+    <div class="setting-group">
+        <span class="setting-label">Text Size</span>
+        <div class="size-control">
+            <button class="size-btn" id="sizeMinus">−</button>
+            <span class="size-value" id="sizeValue">16px</span>
+            <button class="size-btn" id="sizePlus">+</button>
+        </div>
+    </div>
+
+    <div class="setting-group">
+        <span class="setting-label">Line Height</span>
+        <div class="size-control">
+            <button class="size-btn" id="lineHeightMinus">−</button>
+            <span class="size-value" id="lineHeightValue">1.8</span>
+            <button class="size-btn" id="lineHeightPlus">+</button>
+        </div>
+    </div>
+
+    <div class="setting-group">
+        <span class="setting-label">Contrast</span>
+        <div class="contrast-toggle">
+            <button class="contrast-btn active" data-contrast="normal">Normal</button>
+            <button class="contrast-btn" data-contrast="high">High</button>
+        </div>
+    </div>
+
+    <div class="setting-group">
+        <button class="reset-btn" id="resetSettings">Reset to Defaults</button>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        const slug = "@novel?.Slug";
-        const chapterNumber = @Model.ChapterNumber;
+        document.addEventListener('DOMContentLoaded', function () {
+            const chapterListToggle = document.getElementById('chapterListToggle');
+            const closeChapterList = document.getElementById('closeChapterList');
+            const chapterListOverlay = document.getElementById('chapterListOverlay');
+            const settingsToggle = document.getElementById('settingsToggle');
+            const settingsPanel = document.getElementById('readerSettingsPanel');
+            const chapterText = document.getElementById('chapterText');
+            
+            const fontPills = document.querySelectorAll('.font-pill');
+            const sizeMinus = document.getElementById('sizeMinus');
+            const sizePlus = document.getElementById('sizePlus');
+            const sizeValue = document.getElementById('sizeValue');
+            const lineHeightMinus = document.getElementById('lineHeightMinus');
+            const lineHeightPlus = document.getElementById('lineHeightPlus');
+            const lineHeightValue = document.getElementById('lineHeightValue');
+            const contrastBtns = document.querySelectorAll('.contrast-btn');
+            const resetBtn = document.getElementById('resetSettings');
 
-        if (slug) {
-            localStorage.setItem(`reading_progress_${slug}`, chapterNumber);
-        }
+            const defaults = {
+                fontFamily: 'Open Sans',
+                fontSize: 16,
+                lineHeight: 1.8,
+                contrast: 'normal'
+            };
+
+            let settings = { ...defaults };
+
+            function loadSettings() {
+                const saved = localStorage.getItem('readerSettings');
+                if (saved) {
+                    settings = { ...defaults, ...JSON.parse(saved) };
+                }
+                applySettings();
+            }
+
+            function saveSettings() {
+                localStorage.setItem('readerSettings', JSON.stringify(settings));
+            }
+
+            function applySettings() {
+                chapterText.style.fontFamily = `"${settings.fontFamily}", sans-serif`;
+                chapterText.style.fontSize = `${settings.fontSize}px`;
+                chapterText.style.lineHeight = settings.lineHeight;
+                
+                sizeValue.textContent = `${settings.fontSize}px`;
+                lineHeightValue.textContent = settings.lineHeight.toFixed(1);
+
+                fontPills.forEach(pill => {
+                    pill.classList.toggle('active', pill.dataset.font === settings.fontFamily);
+                });
+
+                contrastBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.contrast === settings.contrast);
+                });
+
+                if (settings.contrast === 'high') {
+                    document.body.classList.add('reader-high-contrast');
+                } else {
+                    document.body.classList.remove('reader-high-contrast');
+                }
+            }
+
+            if (chapterListToggle && chapterListOverlay) {
+                chapterListToggle.addEventListener('click', function () {
+                    chapterListOverlay.classList.toggle('hidden');
+                });
+            }
+
+            if (closeChapterList && chapterListOverlay) {
+                closeChapterList.addEventListener('click', function () {
+                    chapterListOverlay.classList.add('hidden');
+                });
+            }
+
+            if (chapterListOverlay) {
+                chapterListOverlay.addEventListener('click', function (e) {
+                    if (e.target === chapterListOverlay) {
+                        chapterListOverlay.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (settingsToggle && settingsPanel) {
+                settingsToggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    settingsPanel.classList.toggle('open');
+                });
+            }
+
+            document.addEventListener('click', function (e) {
+                if (settingsPanel && !settingsPanel.contains(e.target) && e.target !== settingsToggle) {
+                    settingsPanel.classList.remove('open');
+                }
+            });
+
+            fontPills.forEach(pill => {
+                pill.addEventListener('click', function () {
+                    settings.fontFamily = this.dataset.font;
+                    saveSettings();
+                    applySettings();
+                });
+            });
+
+            sizeMinus.addEventListener('click', function () {
+                if (settings.fontSize > 12) {
+                    settings.fontSize -= 2;
+                    saveSettings();
+                    applySettings();
+                }
+            });
+
+            sizePlus.addEventListener('click', function () {
+                if (settings.fontSize < 32) {
+                    settings.fontSize += 2;
+                    saveSettings();
+                    applySettings();
+                }
+            });
+
+            lineHeightMinus.addEventListener('click', function () {
+                if (settings.lineHeight > 1.2) {
+                    settings.lineHeight = Math.round((settings.lineHeight - 0.2) * 10) / 10;
+                    saveSettings();
+                    applySettings();
+                }
+            });
+
+            lineHeightPlus.addEventListener('click', function () {
+                if (settings.lineHeight < 2.5) {
+                    settings.lineHeight = Math.round((settings.lineHeight + 0.2) * 10) / 10;
+                    saveSettings();
+                    applySettings();
+                }
+            });
+
+            contrastBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    settings.contrast = this.dataset.contrast;
+                    saveSettings();
+                    applySettings();
+                });
+            });
+
+            resetBtn.addEventListener('click', function () {
+                settings = { ...defaults };
+                saveSettings();
+                applySettings();
+            });
+
+            loadSettings();
+        });
     </script>
+    <style>
+        body.reader-high-contrast .chapter-text {
+            color: #000000 !important;
+            background: #FAFAFA !important;
+        }
+        [data-theme="dark"] body.reader-high-contrast .chapter-text {
+            color: #FFFFFF !important;
+            background: #0A0A0A !important;
+        }
+    </style>
 }
