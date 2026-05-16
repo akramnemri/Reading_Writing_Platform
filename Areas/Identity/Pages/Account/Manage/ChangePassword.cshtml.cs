@@ -3,25 +3,26 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Reading_Writing_Platform.Models;
 
 namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
 {
     [Authorize]
-    public class ChangePasswordModel : PageModel
-    {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly ILogger<ChangePasswordModel> _logger;
+     public class ChangePasswordModel : PageModel
+     {
+         private readonly UserManager<ApplicationUser> _userManager;
+         private readonly SignInManager<ApplicationUser> _signInManager;
+         private readonly ILogger<ChangePasswordModel> _logger;
 
-        public ChangePasswordModel(
-            UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager,
-            ILogger<ChangePasswordModel> logger)
-        {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _logger = logger;
-        }
+         public ChangePasswordModel(
+             UserManager<ApplicationUser> userManager,
+             SignInManager<ApplicationUser> signInManager,
+             ILogger<ChangePasswordModel> logger)
+         {
+             _userManager = userManager;
+             _signInManager = signInManager;
+             _logger = logger;
+         }
 
         [BindProperty]
         public InputModel Input { get; set; } = new();
@@ -89,7 +90,7 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
                 return Page();
             }
 
-            // Force les autres sessions à se reconnecter (security stamp)
+            // Force les autres sessions ï¿½ se reconnecter (security stamp)
             await _userManager.UpdateSecurityStampAsync(user);
 
             // Re-sign in de la session courante

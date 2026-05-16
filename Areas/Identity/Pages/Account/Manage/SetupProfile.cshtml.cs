@@ -10,22 +10,22 @@ using Reading_Writing_Platform.Security;
 
 namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
 {
-    [Authorize]
-    public class SetupProfileModel : PageModel
-    {
-        private readonly ApplicationDbContext _dbContext;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly ILogger<SetupProfileModel> _logger;
+     [Authorize]
+     public class SetupProfileModel : PageModel
+     {
+         private readonly ApplicationDbContext _dbContext;
+         private readonly UserManager<ApplicationUser> _userManager;
+         private readonly ILogger<SetupProfileModel> _logger;
 
-        public SetupProfileModel(
-            ApplicationDbContext dbContext,
-            UserManager<IdentityUser> userManager,
-            ILogger<SetupProfileModel> logger)
-        {
-            _dbContext = dbContext;
-            _userManager = userManager;
-            _logger = logger;
-        }
+         public SetupProfileModel(
+             ApplicationDbContext dbContext,
+             UserManager<ApplicationUser> userManager,
+             ILogger<SetupProfileModel> logger)
+         {
+             _dbContext = dbContext;
+             _userManager = userManager;
+             _logger = logger;
+         }
 
         [BindProperty]
         public InputModel Input { get; set; } = new();
