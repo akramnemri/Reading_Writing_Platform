@@ -20,9 +20,9 @@
 <div class="space-y-6">
     <nav class="text-sm text-ink-blue/60 flex items-center gap-2">
         <a asp-controller="Novel" asp-action="Index" class="hover:text-ink-blue">My Novels</a>
-        <span>�</span>
+        <span>&rsaquo;</span>
         <a asp-controller="Novel" asp-action="Details" asp-route-id="@novel.Id" class="hover:text-ink-blue">@novel.Title</a>
-        <span>�</span>
+        <span>&rsaquo;</span>
         <span class="text-ink-blue font-medium">Chapters</span>
     </nav>
 
@@ -36,7 +36,7 @@
 
         <div class="flex flex-wrap gap-2">
             <a asp-controller="Novel" asp-action="Edit" asp-route-id="@novel.Id" class="btn-ghost py-2 px-4">Novel Settings</a>
-            <a asp-action="Create" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" class="btn-gold py-2 px-4">+ Create Chapter</a>
+            <a asp-action="Create" asp-route-novelId="@novel.Id" asp-route-novelSlug="@novel.Slug" class="btn-primary py-2 px-4">+ Create Chapter</a>
         </div>
     </div>
 
