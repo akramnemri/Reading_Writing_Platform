@@ -48,7 +48,7 @@
                     <div>
                         <label asp-for="Input.FullName" class="mb-1 block text-sm font-medium text-ink-blue"></label>
                         <input asp-for="Input.FullName"
-                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                                class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-ink-blue/60"
                                autocomplete="name"
                                placeholder="Jane Austen" />
                         <span asp-validation-for="Input.FullName" class="mt-1 block text-sm text-red-600"></span>
@@ -57,7 +57,7 @@
                     <div>
                         <label asp-for="Input.Email" class="mb-1 block text-sm font-medium text-ink-blue"></label>
                         <input asp-for="Input.Email"
-                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                                class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-ink-blue/60"
                                autocomplete="username"
                                placeholder="name@example.com" />
                         <span asp-validation-for="Input.Email" class="mt-1 block text-sm text-red-600"></span>
@@ -66,7 +66,7 @@
                     <div>
                         <label asp-for="Input.Password" class="mb-1 block text-sm font-medium text-ink-blue"></label>
                         <input asp-for="Input.Password"
-                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                                class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-ink-blue/60"
                                autocomplete="new-password"
                                placeholder="Create a password" />
                         <span asp-validation-for="Input.Password" class="mt-1 block text-sm text-red-600"></span>
@@ -75,7 +75,7 @@
                     <div>
                         <label asp-for="Input.ConfirmPassword" class="mb-1 block text-sm font-medium text-ink-blue"></label>
                         <input asp-for="Input.ConfirmPassword"
-                               class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-antique-gold"
+                                class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 bg-white px-3 py-2 outline-none ring-0 transition focus:border-ink-blue/60"
                                autocomplete="new-password"
                                placeholder="Confirm password" />
                         <span asp-validation-for="Input.ConfirmPassword" class="mt-1 block text-sm text-red-600"></span>
@@ -90,19 +90,19 @@
                                class="mt-0.5 h-4 w-4 rounded border-ink-blue/30" />
                         <label for="accept-terms">
                             I agree to the
-                            <a asp-area="" asp-controller="Home" asp-action="Privacy" class="underline hover:text-antique-gold">Privacy Policy</a>
+                             <a asp-area="" asp-controller="Home" asp-action="Privacy" class="underline hover:text-ink-blue">Privacy Policy</a>
                             and
-                            <a href="#" class="underline hover:text-antique-gold">Terms</a>.
+                             <a href="#" class="underline hover:text-ink-blue">Terms</a>.
                         </label>
                     </div>
                     <span asp-validation-for="Input.AcceptTerms" class="mt-1 block text-sm text-red-600"></span>
 
-                    <button type="submit" class="btn-gold w-full justify-center">Create account</button>
+                     <button type="submit" class="btn-primary w-full justify-center">Create account</button>
 
                     <p class="pt-2 text-center text-sm text-ink-blue/70">
                         Already have an account?
                         <a href="@Url.Page("/Account/Login", values: new { area = "Identity", returnUrl = Model.ReturnUrl })"
-                           class="font-semibold text-antique-gold hover:underline">
+                           class="font-semibold text-ink-blue hover:underline">
                             Sign in
                         </a>
                     </p>
@@ -118,9 +118,9 @@
 
             <div class="absolute bottom-10 left-10 right-10 text-cream">
                 <p class="text-4xl leading-tight font-display">
-                    “There is no greater agony than bearing an untold story inside you.”
+                    ï¿½There is no greater agony than bearing an untold story inside you.ï¿½
                 </p>
-                <p class="mt-4 text-antique-gold font-semibold">— Maya Angelou</p>
+                 <p class="mt-4 text-ink-blue font-semibold">ï¿½ Maya Angelou</p>
             </div>
         </section>
     </main>

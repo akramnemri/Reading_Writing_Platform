@@ -7,29 +7,30 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Reading_Writing_Platform.Data;
+using Reading_Writing_Platform.Models;
 using Reading_Writing_Platform.Security;
 
 namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
 {
     [AllowAnonymous]
-    public class LoginModel : PageModel
-    {
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly ApplicationDbContext _dbContext;
-        private readonly ILogger<LoginModel> _logger;
+     public class LoginModel : PageModel
+     {
+         private readonly SignInManager<ApplicationUser> _signInManager;
+         private readonly UserManager<ApplicationUser> _userManager;
+         private readonly ApplicationDbContext _dbContext;
+         private readonly ILogger<LoginModel> _logger;
 
-        public LoginModel(
-            SignInManager<IdentityUser> signInManager,
-            UserManager<IdentityUser> userManager,
-            ApplicationDbContext dbContext,
-            ILogger<LoginModel> logger)
-        {
-            _signInManager = signInManager;
-            _userManager = userManager;
-            _dbContext = dbContext;
-            _logger = logger;
-        }
+         public LoginModel(
+             SignInManager<ApplicationUser> signInManager,
+             UserManager<ApplicationUser> userManager,
+             ApplicationDbContext dbContext,
+             ILogger<LoginModel> logger)
+         {
+             _signInManager = signInManager;
+             _userManager = userManager;
+             _dbContext = dbContext;
+             _logger = logger;
+         }
 
         [BindProperty]
         public InputModel Input { get; set; } = new();

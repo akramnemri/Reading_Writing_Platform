@@ -3,20 +3,21 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Reading_Writing_Platform.Models;
 
 namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
 {
     [AllowAnonymous]
-    public class ForgotPasswordModel : PageModel
-    {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly ILogger<ForgotPasswordModel> _logger;
+     public class ForgotPasswordModel : PageModel
+     {
+         private readonly UserManager<ApplicationUser> _userManager;
+         private readonly ILogger<ForgotPasswordModel> _logger;
 
-        public ForgotPasswordModel(UserManager<IdentityUser> userManager, ILogger<ForgotPasswordModel> logger)
-        {
-            _userManager = userManager;
-            _logger = logger;
-        }
+         public ForgotPasswordModel(UserManager<ApplicationUser> userManager, ILogger<ForgotPasswordModel> logger)
+         {
+             _userManager = userManager;
+             _logger = logger;
+         }
 
         [BindProperty]
         public InputModel Input { get; set; } = new();

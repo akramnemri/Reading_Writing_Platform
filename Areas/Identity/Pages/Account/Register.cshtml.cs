@@ -4,26 +4,27 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Reading_Writing_Platform.Models;
 using Reading_Writing_Platform.Security;
 
 namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
 {
     [AllowAnonymous]
-    public class RegisterModel : PageModel
-    {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly ILogger<RegisterModel> _logger;
+     public class RegisterModel : PageModel
+     {
+         private readonly UserManager<ApplicationUser> _userManager;
+         private readonly SignInManager<ApplicationUser> _signInManager;
+         private readonly ILogger<RegisterModel> _logger;
 
-        public RegisterModel(
-            UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager,
-            ILogger<RegisterModel> logger)
-        {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _logger = logger;
-        }
+         public RegisterModel(
+             UserManager<ApplicationUser> userManager,
+             SignInManager<ApplicationUser> signInManager,
+             ILogger<RegisterModel> logger)
+         {
+             _userManager = userManager;
+             _signInManager = signInManager;
+             _logger = logger;
+         }
 
         [BindProperty]
         public InputModel Input { get; set; } = new();
@@ -77,7 +78,7 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account
                 return Page();
             }
 
-            var user = new IdentityUser
+            var user = new ApplicationUser
             {
                 UserName = Input.Email,
                 Email = Input.Email,
