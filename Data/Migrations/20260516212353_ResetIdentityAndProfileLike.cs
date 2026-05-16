@@ -2,10 +2,10 @@
 
 #nullable disable
 
-namespace Reading_Writing_Platform.Data.Migrations
+namespace Reading_Writing_Platform.Migrations
 {
     /// <inheritdoc />
-    public partial class FullSchema_v1 : Migration
+    public partial class ResetIdentityAndProfileLike : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
