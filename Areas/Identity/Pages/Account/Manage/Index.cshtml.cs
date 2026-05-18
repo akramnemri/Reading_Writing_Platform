@@ -57,8 +57,10 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
                 Intent = profile.Intent;
             }
 
-            // Use user's profile picture if set
-            ProfilePictureUrl = user.ProfilePictureUrl;
+            // Use user's profile picture if set, otherwise fall back to the profile avatar
+            ProfilePictureUrl = string.IsNullOrWhiteSpace(user.ProfilePictureUrl)
+                ? profile?.AvatarUrl
+                : user.ProfilePictureUrl;
 
             // Check if user is an author via role
             IsAuthor = await _userManager.IsInRoleAsync(user, RoleNames.Author);

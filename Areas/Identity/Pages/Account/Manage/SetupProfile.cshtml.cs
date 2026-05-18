@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,18 +14,24 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
      [Authorize]
      public class SetupProfileModel : PageModel
      {
+        private const long MaxImageSizeBytes = 5 * 1024 * 1024;
+        private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+
          private readonly ApplicationDbContext _dbContext;
          private readonly UserManager<ApplicationUser> _userManager;
          private readonly ILogger<SetupProfileModel> _logger;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
          public SetupProfileModel(
              ApplicationDbContext dbContext,
              UserManager<ApplicationUser> userManager,
-             ILogger<SetupProfileModel> logger)
+            ILogger<SetupProfileModel> logger,
+            IWebHostEnvironment webHostEnvironment)
          {
              _dbContext = dbContext;
              _userManager = userManager;
              _logger = logger;
+            _webHostEnvironment = webHostEnvironment;
          }
 
         [BindProperty]
@@ -42,10 +49,8 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
             [MaxLength(500)]
             public string? Bio { get; set; }
 
-            [MaxLength(500)]
-            [Display(Name = "Avatar URL")]
-            [Url(ErrorMessage = "Please enter a valid URL.")]
-            public string? AvatarUrl { get; set; }
+            [Display(Name = "Avatar image")]
+            public IFormFile? AvatarFile { get; set; }
 
             [Display(Name = "What brings you here?")]
             public ProfileIntent Intent { get; set; } = ProfileIntent.Read;
@@ -64,7 +69,6 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
             {
                 Input.DisplayName = profile.DisplayName;
                 Input.Bio = profile.Bio;
-                Input.AvatarUrl = profile.AvatarUrl;
                 Input.Intent = profile.Intent;
             }
             else
@@ -77,6 +81,15 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
 
         public async Task<IActionResult> OnPostAsync()
         {
+            if (Input.AvatarFile is { Length: > 0 })
+            {
+                string? validationError = ValidateImageFile(Input.AvatarFile);
+                if (validationError is not null)
+                {
+                    ModelState.AddModelError("Input.AvatarFile", validationError);
+                }
+            }
+
             if (!ModelState.IsValid)
             {
                 return Page();
@@ -102,9 +115,16 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
 
             profile.DisplayName = Input.DisplayName.Trim();
             profile.Bio = Input.Bio?.Trim();
-            profile.AvatarUrl = Input.AvatarUrl?.Trim();
             profile.Intent = Input.Intent;
             profile.UpdatedAt = DateTimeOffset.UtcNow;
+
+            if (Input.AvatarFile is { Length: > 0 })
+            {
+                string avatarUrl = await SaveImageAsync(Input.AvatarFile, "avatars");
+                profile.AvatarUrl = avatarUrl;
+                user.ProfilePictureUrl = avatarUrl;
+                _dbContext.Users.Update(user);
+            }
 
             if (!await _userManager.IsInRoleAsync(user, RoleNames.Member))
             {
@@ -134,6 +154,48 @@ namespace Reading_Writing_Platform.Areas.Identity.Pages.Account.Manage
             }
 
             return RedirectToPage("/Index");
+        }
+
+        private static string? ValidateImageFile(IFormFile file)
+        {
+            if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Only image files are allowed.";
+            }
+
+            if (file.Length == 0)
+            {
+                return "The uploaded file is empty.";
+            }
+
+            if (file.Length > MaxImageSizeBytes)
+            {
+                return "The image must be 5 MB or smaller.";
+            }
+
+            string extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(extension) ||
+                !AllowedImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            {
+                return "Only JPG, PNG, GIF, or WEBP images are allowed.";
+            }
+
+            return null;
+        }
+
+        private async Task<string> SaveImageAsync(IFormFile file, string folderName)
+        {
+            string uploadsRoot = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", folderName);
+            Directory.CreateDirectory(uploadsRoot);
+
+            string extension = Path.GetExtension(file.FileName);
+            string fileName = $"{Guid.NewGuid():N}{extension}";
+            string filePath = Path.Combine(uploadsRoot, fileName);
+
+            await using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            return $"/uploads/{folderName}/{fileName}";
         }
     }
 }

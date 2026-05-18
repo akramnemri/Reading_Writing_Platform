@@ -19,14 +19,21 @@ namespace Reading_Writing_Platform.Areas.Author.Controllers
         private const int DefaultPageNumber = 1;
         private const int MinimumPageSize = 3;
         private const int MaximumPageSize = 20;
+        private const long MaxImageSizeBytes = 5 * 1024 * 1024;
+        private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 
         private readonly ApplicationDbContext _dbContext;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public NovelController(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager)
+        public NovelController(
+            ApplicationDbContext dbContext,
+            UserManager<ApplicationUser> userManager,
+            IWebHostEnvironment webHostEnvironment)
         {
             _dbContext = dbContext;
             _userManager = userManager;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         public async Task<IActionResult> Index(string? status = null)
@@ -193,10 +200,25 @@ namespace Reading_Writing_Platform.Areas.Author.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(NovelFormViewModel vm)
         {
+            if (vm.CoverImageFile is { Length: > 0 })
+            {
+                string? validationError = ValidateImageFile(vm.CoverImageFile);
+                if (validationError is not null)
+                {
+                    ModelState.AddModelError(nameof(vm.CoverImageFile), validationError);
+                }
+            }
+
             if (!ModelState.IsValid)
             {
                 vm.AvailableThemes = await GetThemesSelectListAsync(vm.SelectedThemeIds);
                 return View(vm);
+            }
+
+            string? coverImageUrl = null;
+            if (vm.CoverImageFile is { Length: > 0 })
+            {
+                coverImageUrl = await SaveImageAsync(vm.CoverImageFile, "novel-covers");
             }
 
             string authorUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
@@ -214,7 +236,7 @@ namespace Reading_Writing_Platform.Areas.Author.Controllers
                 Title = vm.Title.Trim(),
                 Slug = uniqueSlug,
                 Description = vm.Description?.Trim(),
-                CoverImageUrl = vm.CoverImageUrl?.Trim(),
+                CoverImageUrl = coverImageUrl,
                 Status = NovelStatus.Draft, // Always start as Draft
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
@@ -277,10 +299,25 @@ namespace Reading_Writing_Platform.Areas.Author.Controllers
                 return NotFound();
             }
 
+            if (vm.CoverImageFile is { Length: > 0 })
+            {
+                string? validationError = ValidateImageFile(vm.CoverImageFile);
+                if (validationError is not null)
+                {
+                    ModelState.AddModelError(nameof(vm.CoverImageFile), validationError);
+                }
+            }
+
             if (!ModelState.IsValid)
             {
                 vm.AvailableThemes = await GetThemesSelectListAsync(vm.SelectedThemeIds);
+                vm.CoverImageUrl = novel.CoverImageUrl;
                 return View(vm);
+            }
+
+            if (vm.CoverImageFile is { Length: > 0 })
+            {
+                novel.CoverImageUrl = await SaveImageAsync(vm.CoverImageFile, "novel-covers");
             }
 
             string newBaseSlug = SlugHelper.Generate(vm.Title);
@@ -288,7 +325,6 @@ namespace Reading_Writing_Platform.Areas.Author.Controllers
 
             novel.Title = vm.Title.Trim();
             novel.Description = vm.Description?.Trim();
-            novel.CoverImageUrl = vm.CoverImageUrl?.Trim();
             // DO NOT change Status here - it's managed by dedicated actions
             // novel.Status = vm.Status;
             novel.Slug = newUniqueSlug;
@@ -516,6 +552,48 @@ namespace Reading_Writing_Platform.Areas.Author.Controllers
             }
             string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             return _dbContext.Novels.Where(x => x.AuthorUserId == userId);
+        }
+
+        private static string? ValidateImageFile(IFormFile file)
+        {
+            if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Only image files are allowed.";
+            }
+
+            if (file.Length == 0)
+            {
+                return "The uploaded file is empty.";
+            }
+
+            if (file.Length > MaxImageSizeBytes)
+            {
+                return "The image must be 5 MB or smaller.";
+            }
+
+            string extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(extension) ||
+                !AllowedImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            {
+                return "Only JPG, PNG, GIF, or WEBP images are allowed.";
+            }
+
+            return null;
+        }
+
+        private async Task<string> SaveImageAsync(IFormFile file, string folderName)
+        {
+            string uploadsRoot = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", folderName);
+            Directory.CreateDirectory(uploadsRoot);
+
+            string extension = Path.GetExtension(file.FileName);
+            string fileName = $"{Guid.NewGuid():N}{extension}";
+            string filePath = Path.Combine(uploadsRoot, fileName);
+
+            await using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            return $"/uploads/{folderName}/{fileName}";
         }
 
         private async Task<List<SelectListItem>> GetThemesSelectListAsync(IEnumerable<int>? selectedIds = null)

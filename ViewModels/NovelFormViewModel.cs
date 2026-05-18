@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Reading_Writing_Platform.Models;
 
@@ -16,6 +17,9 @@ namespace Reading_Writing_Platform.ViewModels
 
         [MaxLength(500), Display(Name = "Cover image URL")]
         public string? CoverImageUrl { get; set; }
+
+        [Display(Name = "Cover image")]
+        public IFormFile? CoverImageFile { get; set; }
 
         public NovelStatus Status { get; set; } = NovelStatus.Draft;
 

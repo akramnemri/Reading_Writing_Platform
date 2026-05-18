@@ -1,6 +1,6 @@
 @model Reading_Writing_Platform.ViewModels.NovelFormViewModel
 
-<form method="post" class="space-y-4">
+<form method="post" enctype="multipart/form-data" class="space-y-4">
     <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm"></div>
 
     <input type="hidden" asp-for="Id" />
@@ -19,9 +19,14 @@
     </div>
 
     <div>
-        <label asp-for="CoverImageUrl" class="block mb-1 text-sm font-medium"></label>
-        <input asp-for="CoverImageUrl" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
-        <span asp-validation-for="CoverImageUrl" class="text-red-600 text-sm"></span>
+        <label asp-for="CoverImageFile" class="block mb-1 text-sm font-medium"></label>
+        <input asp-for="CoverImageFile" type="file" accept="image/*" class="w-full rounded-[var(--radius-inner)] border border-ink-blue/20 px-3 py-2 bg-white" />
+        <span asp-validation-for="CoverImageFile" class="text-red-600 text-sm"></span>
+        @if (!string.IsNullOrWhiteSpace(Model.CoverImageUrl))
+        {
+            <p class="mt-2 text-xs text-ink-blue/60">Current image:</p>
+            <img src="@Model.CoverImageUrl" alt="Current cover" class="mt-1 h-32 w-24 object-cover rounded-[var(--radius-inner)]" />
+        }
     </div>
 
     <div>
